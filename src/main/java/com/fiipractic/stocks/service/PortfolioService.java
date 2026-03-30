@@ -4,11 +4,15 @@ import com.fiipractic.stocks.exception.UnauthorizedException;
 import com.fiipractic.stocks.dto.BuyStockRequest;
 import com.fiipractic.stocks.dto.CreatePortfolioRequest;
 import com.fiipractic.stocks.dto.HoldingDTO;
+import com.fiipractic.stocks.dto.PortfolioValuationDTO;
 import com.fiipractic.stocks.dto.PortfolioDTO;
+import com.fiipractic.stocks.dto.PositionSummaryDTO;
+import com.fiipractic.stocks.dto.RefreshResponseDTO;
 import com.fiipractic.stocks.exception.PortfolioNotFoundException;
 import com.fiipractic.stocks.model.Portfolio;
 import com.fiipractic.stocks.model.PortfolioHolding;
 import com.fiipractic.stocks.model.Stock;
+import com.fiipractic.stocks.exception.UserNotOwnerOfPortfolioException;
 import com.fiipractic.stocks.repository.PortfolioHoldingRepository;
 import com.fiipractic.stocks.repository.PortfolioRepository;
 
@@ -21,6 +25,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,17 +34,21 @@ import java.util.stream.Collectors;
 @Service
 public class PortfolioService {
     private static final long FREE_USER_PORTFOLIO_LIMIT = 3L;
+    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     private final PortfolioRepository portfolioRepository;
     private final PortfolioHoldingRepository holdingRepository;
     private final StockService stockService;
+    private final PriceRefreshPublisher priceRefreshPublisher;
 
     public PortfolioService(PortfolioRepository portfolioRepository,
                            PortfolioHoldingRepository holdingRepository,
-                           StockService stockService) {
+                           StockService stockService,
+                           PriceRefreshPublisher priceRefreshPublisher) {
         this.portfolioRepository = portfolioRepository;
         this.holdingRepository = holdingRepository;
         this.stockService = stockService;
+        this.priceRefreshPublisher = priceRefreshPublisher;
     }
 
     @Transactional
@@ -108,6 +118,110 @@ public class PortfolioService {
         portfolio.setDeleted(true);
         portfolio.setDeletedBy(jwt.getSubject());
         portfolio.setDeletedAt(LocalDateTime.now());
+    }
+
+    public RefreshResponseDTO refreshPortfolioPrices(String userId, Long portfolioId) {
+        Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                .filter(p -> p.getUserId().equals(userId))
+                .orElseThrow(() -> new UserNotOwnerOfPortfolioException("Portfolio not found or access denied"));
+
+        List<String> symbols = portfolio.getHoldings().stream()
+                .map(h -> h.getStock().getSymbol())
+                .distinct()
+                .toList();
+
+        symbols.forEach(symbol -> priceRefreshPublisher.publishRefresh(symbol, userId));
+
+        return new RefreshResponseDTO(
+                portfolioId.toString(),
+                symbols,
+                symbols.size(),
+                "Price refresh queued for " + symbols.size() + " stocks"
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PortfolioValuationDTO calculateValuation(String userId, Long portfolioId) {
+        Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                .filter(p -> p.getUserId().equals(userId))
+                .orElseThrow(() -> new UserNotOwnerOfPortfolioException("Portfolio not found or access denied"));
+
+        Map<String, List<PortfolioHolding>> holdingsBySymbol = portfolio.getHoldings().stream()
+                .collect(Collectors.groupingBy(h -> h.getStock().getSymbol()));
+
+        List<PositionSummaryDTO> positions = holdingsBySymbol.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> {
+                    String symbol = entry.getKey();
+                    List<PortfolioHolding> holdings = entry.getValue();
+
+                    int totalQuantity = holdings.stream()
+                            .mapToInt(PortfolioHolding::getQuantity)
+                            .sum();
+
+                    BigDecimal totalCost = holdings.stream()
+                            .map(h -> h.getPurchasePrice().multiply(BigDecimal.valueOf(h.getQuantity())))
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    BigDecimal quantityDecimal = BigDecimal.valueOf(totalQuantity);
+                    BigDecimal avgPrice = totalQuantity == 0
+                            ? BigDecimal.ZERO
+                            : totalCost.divide(quantityDecimal, 2, RoundingMode.HALF_UP);
+
+                    BigDecimal currentPrice = holdings.isEmpty() ? null : holdings.get(0).getStock().getCurrentPrice();
+                    BigDecimal invested = avgPrice.multiply(quantityDecimal);
+                    BigDecimal currentValue = currentPrice != null
+                            ? currentPrice.multiply(quantityDecimal)
+                            : invested;
+
+                    BigDecimal profitLoss = currentValue.subtract(invested);
+                    BigDecimal profitLossPercent = calculateProfitLossPercent(profitLoss, invested);
+
+                    return new PositionSummaryDTO(
+                            symbol,
+                            totalQuantity,
+                            avgPrice,
+                            currentPrice,
+                            invested,
+                            currentValue,
+                            profitLoss,
+                            profitLossPercent
+                    );
+                })
+                .toList();
+
+        BigDecimal totalInvested = positions.stream()
+                .map(PositionSummaryDTO::invested)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalCurrentValue = positions.stream()
+                .map(PositionSummaryDTO::currentValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalProfitLoss = totalCurrentValue.subtract(totalInvested);
+        BigDecimal totalProfitLossPercent = calculateProfitLossPercent(totalProfitLoss, totalInvested);
+
+        return new PortfolioValuationDTO(
+                portfolio.getId(),
+                portfolio.getName(),
+                totalInvested,
+                totalCurrentValue,
+                totalProfitLoss,
+                totalProfitLossPercent,
+                positions,
+                LocalDateTime.now()
+        );
+    }
+
+    private BigDecimal calculateProfitLossPercent(BigDecimal profitLoss, BigDecimal invested) {
+        if (invested.signum() == 0) {
+            return BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
+        }
+
+        return profitLoss
+                .divide(invested, 8, RoundingMode.HALF_UP)
+                .multiply(ONE_HUNDRED)
+                .setScale(4, RoundingMode.HALF_UP);
     }
 
     private PortfolioDTO toDTO(Portfolio p) {

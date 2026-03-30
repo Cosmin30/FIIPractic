@@ -1,12 +1,15 @@
 package com.fiipractic.stocks.controller;
+import com.fiipractic.stocks.dto.PriceRefreshResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fiipractic.stocks.dto.StockDTO;
 import com.fiipractic.stocks.service.StockService;
-
+import com.fiipractic.stocks.service.PriceRefreshPublisher;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,9 +21,11 @@ public class StockController {
     private static final Logger log = LoggerFactory.getLogger(StockController.class);
 
     private final StockService stockService;
+    private final PriceRefreshPublisher priceRefreshPublisher;
 
-    public StockController(StockService stockService) {
+    public StockController(StockService stockService, PriceRefreshPublisher priceRefreshPublisher) {
         this.stockService = stockService;
+        this.priceRefreshPublisher = priceRefreshPublisher;
     }
 
     @PostMapping
@@ -50,10 +55,34 @@ public class StockController {
         return ResponseEntity.noContent().build();
     }
     @PostMapping("/{symbol}/refresh")
-    public ResponseEntity<StockDTO> refreshPrice(@PathVariable String symbol) {
-        log.info("Refreshing price for symbol: {}", symbol);
-        StockDTO updated = stockService.refreshPrice(symbol);
-        return ResponseEntity.ok(updated);
+    public ResponseEntity<PriceRefreshResponseDTO> refreshPrice(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String symbol) {
+
+        log.info("[API] Queue refresh for symbol [{}] by user [{}]", symbol, jwt.getSubject());
+        priceRefreshPublisher.publishRefresh(symbol, jwt.getSubject());
+
+        return ResponseEntity.accepted()
+                .body(new PriceRefreshResponseDTO(
+                        "QUEUED",
+                        symbol.toUpperCase(),
+                        "Price refresh request queued"
+                ));
     }
+    @PostMapping("/refresh")
+    public ResponseEntity<PriceRefreshResponseDTO> refreshAllPrices(
+            @AuthenticationPrincipal Jwt jwt) {
+
+        log.info("[API] Queue refresh for all symbols by user [{}]", jwt.getSubject());
+        priceRefreshPublisher.publishRefreshAll(jwt.getSubject());
+
+        return ResponseEntity.accepted()
+                .body(new PriceRefreshResponseDTO(
+                        "QUEUED",
+                        null,
+                        "Price refresh queued for all stocks"
+                ));
+    }
+
 }
 

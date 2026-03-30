@@ -1,8 +1,6 @@
 package com.fiipractic.stocks.controller;
 
-import com.fiipractic.stocks.dto.BuyStockRequest;
-import com.fiipractic.stocks.dto.CreatePortfolioRequest;
-import com.fiipractic.stocks.dto.PortfolioDTO;
+import com.fiipractic.stocks.dto.*;
 import com.fiipractic.stocks.service.PortfolioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -60,5 +58,23 @@ public class PortfolioController {
         portfolioService.deletePortfolio(jwt, portfolioId);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{portfolioId}/refresh")
+    public ResponseEntity<RefreshResponseDTO> refreshPortfolioPrices(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long portfolioId) {
+        return ResponseEntity.ok(
+                portfolioService.refreshPortfolioPrices(jwt.getSubject(), portfolioId)
+        );
+    }
+    @GetMapping("/{portfolioId}/valuation")
+    public ResponseEntity<PortfolioValuationDTO> getPortfolioValuation(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long portfolioId) {
+        return ResponseEntity.ok(
+                portfolioService.calculateValuation(jwt.getSubject(), portfolioId)
+        );
+    }
+
 
 }

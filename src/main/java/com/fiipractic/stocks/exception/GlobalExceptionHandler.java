@@ -44,6 +44,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
+    @ExceptionHandler(UserNotOwnerOfPortfolioException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotOwnerOfPortfolioException(UserNotOwnerOfPortfolioException ex) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
     @ExceptionHandler(PortfolioLimitException.class)
     public ResponseEntity<ErrorResponse> handlePortfolioLimitException(PortfolioLimitException ex) {
         ErrorResponse error = new ErrorResponse(
