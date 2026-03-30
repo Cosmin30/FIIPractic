@@ -1,0 +1,76 @@
+<div class="stocks-page page-enter">
+  <section class="hero-strip glass-panel">
+    <div>
+      <p class="eyebrow">Radar de piata</p>
+      <h1>Universul simbolurilor</h1>
+      <p>Adauga simboluri, actualizeaza cotatiile si organizeaza-ti rapid tabloul de piata.</p>
+    </div>
+    <button nz-button nzType="default" (click)="loadStocks()">Sincronizeaza acum</button>
+  </section>
+
+  <div class="stats-grid">
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Simboluri urmarite</span>
+      <strong>{{ totalStocks() }}</strong>
+    </nz-card>
+
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Cu pret actual</span>
+      <strong>{{ pricedStocks() }}</strong>
+    </nz-card>
+
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Pret mediu</span>
+      <strong>{{ averagePrice() === null ? '-' : formatPrice(averagePrice()) }}</strong>
+    </nz-card>
+  </div>
+
+  <nz-card nzTitle="Gestionare simboluri" class="table-card" [nzLoading]="loading()">
+    <form nz-form [formGroup]="createForm" (ngSubmit)="createStock()" class="stock-form">
+      <nz-form-item>
+        <nz-form-control nzErrorTip="Simbolul este obligatoriu">
+          <input nz-input formControlName="symbol" placeholder="ex: AAPL" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <button nz-button nzType="primary">Adauga simbol</button>
+      <button nz-button nzType="default" type="button" (click)="loadStocks()">Reincarca</button>
+    </form>
+
+    <nz-table [nzData]="stocks()" [nzLoading]="loading()" [nzPageSize]="8" class="stocks-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Simbol</th>
+          <th>Pret curent</th>
+          <th>Actualizat la</th>
+          <th>Actiuni</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (stock of stocks(); track stock.id; let i = $index) {
+          <tr class="data-row" [style.--row-index]="i">
+            <td>{{ stock.id }}</td>
+            <td><nz-tag nzColor="cyan">{{ stock.symbol }}</nz-tag></td>
+            <td class="price">{{ formatPrice(stock.currentPrice) }}</td>
+            <td>{{ stock.lastPriceUpdate ? (stock.lastPriceUpdate | date: 'short') : '-' }}</td>
+            <td class="actions">
+              <button nz-button nzType="default" nzSize="small" (click)="refreshPrice(stock.symbol)">Actualizeaza</button>
+              <button nz-button nzType="default" nzSize="small" (click)="updateStock(stock)">Editeaza</button>
+              <button
+                nz-button
+                nzDanger
+                nzSize="small"
+                nz-popconfirm
+                nzPopconfirmTitle="Stergi acest simbol?"
+                (nzOnConfirm)="deleteStock(stock.id)"
+              >
+                Sterge
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </nz-card>
+</div>

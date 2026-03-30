@@ -1,0 +1,56 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - '5672:5672'     # AMQP protocol
+      - '15672:15672'   # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - ./rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - stocks-network
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/fiipractic?currentSchema=keycloak
+      KC_DB_USERNAME: keycloakuser
+      KC_DB_PASSWORD: keycloakpassword
+      KC_DB_SCHEMA: keycloak
+      KC_HOSTNAME: localhost
+    ports:
+      - '8082:8080'
+    volumes:
+      - ./realm-config/stock-realm.json:/opt/keycloak/data/import/stock-realm.json:ro
+    networks:
+      - stocks-network
+    depends_on:
+      - postgres
+  postgres:
+    image: 'postgres:latest'
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      - 'POSTGRES_DB=fiipractic'
+      - 'POSTGRES_PASSWORD=postgres'
+      - 'POSTGRES_USER=postgres'
+    ports:
+      - '5435:5432'
+    volumes:
+      - ./postgres_data:/var/lib/postgresql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - stocks-network
+
+networks:
+  stocks-network:
+    driver: bridge

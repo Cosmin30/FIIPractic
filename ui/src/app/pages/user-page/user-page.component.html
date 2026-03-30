@@ -1,0 +1,82 @@
+<div class="user-page page-enter">
+  <section class="hero-strip glass-panel">
+    <div>
+      <p class="eyebrow">Centru utilizator</p>
+      <h1>Profilul tau, intr-un tablou financiar clar</h1>
+      <p>Vezi rolurile active, ritmul investitiilor si sanatatea contului fara sa iesi din dashboard.</p>
+    </div>
+    <button nz-button nzType="default" (click)="reload()">Reimprospateaza profilul</button>
+  </section>
+
+  <div class="profile-grid">
+    <nz-card class="profile-card" [nzBordered]="false">
+      <nz-skeleton [nzLoading]="loading()" [nzActive]="true">
+        <div class="identity-row">
+          <nz-avatar class="profile-avatar" [nzText]="initials()" [nzSize]="80"></nz-avatar>
+
+          <div class="identity-copy">
+            <h3>{{ user()?.username || 'utilizator' }}</h3>
+            <p>{{ user()?.email || 'Email indisponibil' }}</p>
+            <div class="roles-wrap">
+              @for (role of user()?.roles || []; track role) {
+                <nz-tag [nzColor]="roleColor(role)">{{ roleLabel(role) }}</nz-tag>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="identity-stats">
+          <article>
+            <span>Scor profil</span>
+            <strong>{{ profileScore() }}%</strong>
+          </article>
+          <article>
+            <span>Portofolii</span>
+            <strong>{{ totalPortfolios() }}</strong>
+          </article>
+          <article>
+            <span>Pozitii</span>
+            <strong>{{ totalHoldings() }}</strong>
+          </article>
+        </div>
+      </nz-skeleton>
+    </nz-card>
+
+    <nz-card class="pulse-card" [nzBordered]="false">
+      <nz-skeleton [nzLoading]="loading()" [nzActive]="true">
+        <p class="card-label">Pulsul contului</p>
+        <div class="score-ring">
+          <nz-progress
+            nzType="circle"
+            [nzPercent]="profileScore()"
+            [nzStrokeColor]="{ '0%': '#0f766e', '100%': '#06b6d4' }"
+            [nzWidth]="120"
+          ></nz-progress>
+        </div>
+
+        <ul class="insights">
+          <li>Ai {{ watchlistSize() }} simboluri in lista de monitorizare.</li>
+          <li>Capital investit: {{ formatMoney(investedCapital()) }}.</li>
+          <li>Valoare medie pe pozitie: {{ formatMoney(averagePosition()) }}.</li>
+        </ul>
+      </nz-skeleton>
+    </nz-card>
+  </div>
+
+  <div class="stats-grid">
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Simboluri urmarite</span>
+      <strong>{{ watchlistSize() }}</strong>
+    </nz-card>
+
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Capital investit</span>
+      <strong>{{ formatMoney(investedCapital()) }}</strong>
+    </nz-card>
+
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Valoare medie pozitie</span>
+      <strong>{{ formatMoney(averagePosition()) }}</strong>
+    </nz-card>
+  </div>
+</div>

@@ -1,0 +1,67 @@
+<div class="admin-page page-enter">
+  <section class="hero-strip glass-panel">
+    <div>
+      <p class="eyebrow">Control administrativ</p>
+      <h1>Supervizare portofolii</h1>
+      <p>Verifica istoricul stergerilor, proprietarii si distributia pozitiilor intre utilizatori.</p>
+    </div>
+    <button nz-button nzType="default" (click)="load()">Actualizeaza</button>
+  </section>
+
+  <div class="stats-grid">
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Portofolii vizibile</span>
+      <strong>{{ totalPortfolios() }}</strong>
+    </nz-card>
+
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Active</span>
+      <strong>{{ activeCount() }}</strong>
+    </nz-card>
+
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Sterse</span>
+      <strong>{{ deletedCount() }}</strong>
+    </nz-card>
+  </div>
+
+  <nz-card nzTitle="Administrare - toate portofoliile" [nzLoading]="loading()" class="admin-card">
+    <div class="toolbar">
+      <label>
+        <span>Include portofolii sterse</span>
+        <nz-switch [(ngModel)]="includeDeleted" (ngModelChange)="load()"></nz-switch>
+      </label>
+    </div>
+
+    <nz-table [nzData]="portfolios()" [nzPageSize]="10">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nume</th>
+          <th>Descriere</th>
+          <th>Creat la</th>
+          <th>Status</th>
+          <th>Sters de</th>
+          <th>Pozitii</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (portfolio of portfolios(); track portfolio.id; let i = $index) {
+          <tr class="data-row" [style.--row-index]="i">
+            <td>{{ portfolio.id }}</td>
+            <td>{{ portfolio.name }}</td>
+            <td>{{ portfolio.description || '-' }}</td>
+            <td>{{ portfolio.createdAt | date: 'short' }}</td>
+            <td>
+              <nz-tag [nzColor]="portfolio.deleted ? 'volcano' : 'green'">
+                {{ portfolio.deleted ? 'STERS' : 'ACTIV' }}
+              </nz-tag>
+            </td>
+            <td>{{ portfolio.deletedBy || '-' }}</td>
+            <td>{{ portfolio.holdings.length }}</td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </nz-card>
+</div>

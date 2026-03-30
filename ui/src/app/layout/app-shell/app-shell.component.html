@@ -1,0 +1,58 @@
+<nz-layout class="shell-layout">
+  <nz-header class="top-nav glass-panel">
+    <a class="brand-zone" routerLink="/stocks" aria-label="Deschide pagina principala">
+      <div class="brand-text">
+        <span class="brand-title">Stock Canvas</span>
+        <span class="brand-subtitle">Control financiar in timp real</span>
+      </div>
+    </a>
+
+    <nav class="nav-links" aria-label="Navigatie principala">
+      <a routerLink="/stocks" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+        <span>Piata</span>
+      </a>
+      <a routerLink="/portfolios" routerLinkActive="is-active">
+        <span>Portofolii</span>
+      </a>
+      <a routerLink="/utilizator" routerLinkActive="is-active">
+        <span>Utilizator</span>
+      </a>
+      @if (isAdmin()) {
+        <a routerLink="/admin/portfolios" routerLinkActive="is-active">
+          <span>Administrare</span>
+        </a>
+      }
+    </nav>
+
+    <div class="session-zone">
+      <a class="identity-chip profile-link" routerLink="/utilizator" aria-label="Mergi la pagina de utilizator">
+        <span class="avatar">{{ initials() }}</span>
+        <div class="identity-copy">
+          <strong>{{ user()?.username || 'utilizator' }}</strong>
+          <small>{{ user()?.email || 'email indisponibil' }}</small>
+        </div>
+      </a>
+
+      @if ((user()?.roles || []).length > 0) {
+        <div class="roles-wrap">
+          @for (role of user()?.roles || []; track role) {
+            <nz-tag [nzColor]="roleColor(role)">{{ roleLabel(role) }}</nz-tag>
+          }
+        </div>
+      }
+
+      <button nz-button nzType="default" class="logout-btn" (click)="logout()">Iesire</button>
+    </div>
+  </nz-header>
+
+  <nz-content class="shell-content">
+    <section class="headline-block">
+      <p>Puls financiar</p>
+      <h2>Pulsul pietei, organizat pe portofolii si roluri</h2>
+    </section>
+
+    <div class="content-frame page-enter">
+      <router-outlet></router-outlet>
+    </div>
+  </nz-content>
+</nz-layout>

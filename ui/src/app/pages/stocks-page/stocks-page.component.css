@@ -1,0 +1,114 @@
+.stocks-page {
+  display: grid;
+  gap: 16px;
+}
+
+.hero-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hero-strip h1 {
+  margin: 2px 0 6px;
+  color: #10263f;
+  font-size: clamp(25px, 3vw, 34px);
+}
+
+.hero-strip p {
+  margin: 0;
+  color: #4d6079;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff, #f7fbff);
+  animation: stat-rise 0.6s ease both;
+}
+
+.stat-card:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.stat-card:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.stat-card .label {
+  display: block;
+  color: #536983;
+  font-size: 13px;
+}
+
+.stat-card strong {
+  display: block;
+  margin-top: 4px;
+  color: #112a46;
+  font-size: 28px;
+}
+
+.stock-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.stock-form nz-form-item {
+  margin-bottom: 0;
+  min-width: 220px;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.stocks-table {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.price {
+  font-weight: 700;
+  color: #153756;
+}
+
+@keyframes stat-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .hero-strip {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

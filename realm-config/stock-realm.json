@@ -1,0 +1,45 @@
+{
+  "realm": "stock",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      { "name": "USER", "description": "Regular user" },
+      { "name": "PREMIUM", "description": "Premium user" },
+      { "name": "ADMIN", "description": "Administrator" }
+    ]
+  },
+  "clients": [{
+    "clientId": "stock-analyzer-app",
+    "enabled": true,
+    "publicClient": true,
+    "serviceAccountsEnabled": true,
+    "directAccessGrantsEnabled": true,
+    "standardFlowEnabled": true,
+    "redirectUris": ["http://localhost:8081/*"],
+    "webOrigins": ["http://localhost:8081"]
+  }],
+  "users": [
+    {
+      "username": "john_doe",
+      "enabled": true,
+      "email": "john@example.com",
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["USER"]
+    },
+    {
+      "username": "jane_premium",
+      "enabled": true,
+      "email": "jane@example.com",
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["USER", "PREMIUM"]
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@example.com",
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }],
+      "realmRoles": ["USER", "ADMIN"]
+    }
+  ]
+}
+

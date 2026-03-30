@@ -1,0 +1,105 @@
+<div class="portfolios-page page-enter">
+  <section class="hero-strip glass-panel">
+    <div>
+      <p class="eyebrow">Tablou portofolii</p>
+      <h1>Atelierul tau de capital</h1>
+      <p>Construieste strategii, urmareste pozitiile si dezvolta fiecare portofoliu pas cu pas.</p>
+    </div>
+    <button nz-button nzType="default" (click)="loadPortfolios()">Actualizeaza tabloul</button>
+  </section>
+
+  <div class="stats-grid">
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Portofolii</span>
+      <strong>{{ totalPortfolios() }}</strong>
+    </nz-card>
+
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Total pozitii</span>
+      <strong>{{ totalHoldings() }}</strong>
+    </nz-card>
+
+    <nz-card class="stat-card" [nzBordered]="false">
+      <span class="label">Capital investit</span>
+      <strong>{{ formatMoney(investedCapital()) }}</strong>
+    </nz-card>
+  </div>
+
+  <nz-card nzTitle="Creeaza portofoliu" class="form-card">
+    <form nz-form [formGroup]="createForm" (ngSubmit)="createPortfolio()" class="portfolio-form">
+      <nz-form-item>
+        <nz-form-control nzErrorTip="Numele este obligatoriu">
+          <input nz-input formControlName="name" placeholder="Nume portofoliu" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-control>
+          <input nz-input formControlName="description" placeholder="Descriere (optional)" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <button nz-button nzType="primary">Creeaza portofoliu</button>
+      <button nz-button type="button" (click)="loadPortfolios()">Reincarca</button>
+    </form>
+  </nz-card>
+
+  <nz-card nzTitle="Portofoliile tale" [nzLoading]="loading()" class="board-card">
+    @if (portfolios().length === 0) {
+      <p class="empty-state">Nu exista portofolii inca. Creeaza unul pentru a incepe monitorizarea.</p>
+    } @else {
+      <nz-collapse class="portfolio-collapse">
+        @for (portfolio of portfolios(); track portfolio.id; let i = $index) {
+          <nz-collapse-panel [nzHeader]="portfolio.name" [nzExtra]="extraTpl" class="data-row" [style.--row-index]="i">
+            <ng-template #extraTpl>
+              <button
+                nz-button
+                nzDanger
+                nzSize="small"
+                nz-popconfirm
+                nzPopconfirmTitle="Stergi acest portofoliu?"
+                (nzOnConfirm)="deletePortfolio(portfolio.id)"
+              >
+                Sterge
+              </button>
+            </ng-template>
+
+            <p class="meta">
+              <strong>Descriere:</strong> {{ portfolio.description || '-' }}
+              <span class="separator">|</span>
+              <strong>Creat la:</strong> {{ portfolio.createdAt | date: 'short' }}
+            </p>
+
+            <form [formGroup]="buyForms[portfolio.id]" class="buy-form" (ngSubmit)="buyStock(portfolio.id)">
+              <input nz-input formControlName="symbol" placeholder="Simbol" />
+              <nz-input-number formControlName="quantity" [nzMin]="1" [nzStep]="1"></nz-input-number>
+              <nz-input-number formControlName="purchasePrice" [nzMin]="0.01" [nzStep]="0.1"></nz-input-number>
+              <button nz-button nzType="primary" nzSize="small">Cumpara actiune</button>
+            </form>
+
+            <nz-table [nzData]="portfolio.holdings" [nzPageSize]="5" [nzSize]="'small'">
+              <thead>
+                <tr>
+                  <th>Simbol</th>
+                  <th>Cantitate</th>
+                  <th>Pret achizitie</th>
+                  <th>Achizitionat la</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (holding of portfolio.holdings; track holding.id; let holdingIndex = $index) {
+                  <tr class="data-row" [style.--row-index]="holdingIndex">
+                    <td>{{ holding.symbol }}</td>
+                    <td>{{ holding.quantity }}</td>
+                    <td>{{ formatMoney(holding.purchasePrice) }}</td>
+                    <td>{{ holding.purchasedAt | date: 'short' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          </nz-collapse-panel>
+        }
+      </nz-collapse>
+    }
+  </nz-card>
+</div>
