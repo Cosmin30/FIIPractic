@@ -30,8 +30,11 @@ export class AuthService {
 
   readonly user = this._user.asReadonly();
   readonly loading = this._loading.asReadonly();
-  readonly isAuthenticated = computed(() => !!this.getAccessToken());
   readonly roles = computed(() => this._user()?.roles ?? []);
+
+  isAuthenticated(): boolean {
+    return !!this.getAccessToken();
+  }
 
   login(username: string, password: string): Observable<UserInfo> {
     this._loading.set(true);

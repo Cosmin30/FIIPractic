@@ -63,32 +63,6 @@
   background-color: rgba(15, 118, 110, 0.08);
 }
 
-.brand-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  background: linear-gradient(145deg, #0f766e, #2dd4bf);
-  box-shadow: 0 14px 24px rgba(15, 118, 110, 0.28);
-  animation: mark-breathe 3.4s ease-in-out infinite;
-}
-
-.brand-mark-text {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  color: #ffffff;
-}
-
-.brand-logo {
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
-  display: block;
-}
-
 .brand-text {
   display: flex;
   flex-direction: column;
@@ -330,17 +304,6 @@
 
   50% {
     opacity: 1;
-  }
-}
-
-@keyframes mark-breathe {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.04);
   }
 }
 
