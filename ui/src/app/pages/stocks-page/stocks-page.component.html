@@ -1,5 +1,5 @@
-<div class="stocks-page market-page page-enter" [@enterMotion]="{ value: 'stocks-page', params: { duration: 540 } }">
-  <section class="hero-strip glass-panel" [@enterMotion]="{ value: 'stocks-hero', params: { delay: 70, duration: 500 } }">
+﻿<div class="stocks-page market-page page-enter">
+  <section class="hero-strip glass-panel">
     <div>
       <p class="eyebrow">Radar de piata</p>
       <h1>Universul simbolurilor</h1>
@@ -8,20 +8,20 @@
     <button nz-button nzType="default" (click)="loadStocks()">Sincronizeaza acum</button>
   </section>
 
-  <div class="stats-grid" [@staggerChildrenMotion]="totalStocks()">
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'stocks-stat-1', params: { delay: 110, duration: 420 } }">
+  <div class="stats-grid">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Simboluri urmarite</span>
-      <strong [@metricPulseMotion]="totalStocks()">{{ totalStocks() }}</strong>
+      <strong>{{ totalStocks() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'stocks-stat-2', params: { delay: 150, duration: 420 } }">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Cu pret actual</span>
-      <strong [@metricPulseMotion]="pricedStocks()">{{ pricedStocks() }}</strong>
+      <strong>{{ pricedStocks() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'stocks-stat-3', params: { delay: 190, duration: 420 } }">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Pret mediu</span>
-      <strong [@metricPulseMotion]="averagePrice() ?? 0">{{ averagePrice() === null ? '-' : formatPrice(averagePrice()) }}</strong>
+      <strong>{{ averagePrice() === null ? '-' : formatPrice(averagePrice()) }}</strong>
     </nz-card>
   </div>
 
@@ -29,7 +29,7 @@
     nzTitle="Gestionare simboluri"
     class="table-card"
     [nzLoading]="loading()"
-    [@enterMotion]="{ value: 'stocks-table-card', params: { delay: 240, duration: 520 } }"
+   
   >
     <form nz-form [formGroup]="createForm" (ngSubmit)="createStock()" class="stock-form">
       <nz-form-item>
@@ -52,7 +52,7 @@
           <th>Actiuni</th>
         </tr>
       </thead>
-      <tbody [@staggerChildrenMotion]="stocksTable.data.length">
+      <tbody>
         @for (stock of stocksTable.data; track stock.id; let i = $index) {
           <tr
             class="data-row stagger-item"
@@ -60,7 +60,7 @@
           >
             <td>{{ stock.id }}</td>
             <td><nz-tag nzColor="cyan">{{ stock.symbol }}</nz-tag></td>
-            <td class="price" [@metricPulseMotion]="stock.currentPrice ?? 0">{{ formatPrice(stock.currentPrice) }}</td>
+            <td class="price">{{ formatPrice(stock.currentPrice) }}</td>
             <td>{{ stock.lastPriceUpdate ? (stock.lastPriceUpdate | date: 'short') : '-' }}</td>
             <td class="actions">
               <button nz-button nzType="default" nzSize="small" (click)="refreshPrice(stock.symbol)">Actualizeaza</button>

@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -12,7 +12,6 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { ApiService } from '../../core/api.service';
 import { Portfolio } from '../../core/models';
-import { enterMotion, listItemMotion, metricPulseMotion, revealMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-portfolios-page',
@@ -30,8 +29,7 @@ import { enterMotion, listItemMotion, metricPulseMotion, revealMotion, staggerCh
     NzPopconfirmModule
   ],
   templateUrl: './portfolios-page.component.html',
-  styleUrl: './portfolios-page.component.css',
-  animations: [enterMotion, listItemMotion, staggerChildrenMotion, metricPulseMotion, revealMotion]
+  styleUrl: './portfolios-page.component.css'
 })
 export class PortfoliosPageComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -161,3 +159,4 @@ export class PortfoliosPageComponent implements OnInit {
     return `$${value.toFixed(2)}`;
   }
 }
+

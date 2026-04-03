@@ -1,5 +1,5 @@
-<div class="portfolios-page market-page page-enter" [@enterMotion]="{ value: 'portfolios-page', params: { duration: 540 } }">
-  <section class="hero-strip glass-panel" [@enterMotion]="{ value: 'portfolios-hero', params: { delay: 70, duration: 500 } }">
+﻿<div class="portfolios-page market-page page-enter">
+  <section class="hero-strip glass-panel">
     <div>
       <p class="eyebrow">Tablou portofolii</p>
       <h1>Atelierul tau de capital</h1>
@@ -8,24 +8,24 @@
     <button nz-button nzType="default" (click)="loadPortfolios()">Actualizeaza tabloul</button>
   </section>
 
-  <div class="stats-grid" [@staggerChildrenMotion]="totalPortfolios()">
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'portfolios-stat-1', params: { delay: 110, duration: 420 } }">
+  <div class="stats-grid">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Portofolii</span>
-      <strong [@metricPulseMotion]="totalPortfolios()">{{ totalPortfolios() }}</strong>
+      <strong>{{ totalPortfolios() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'portfolios-stat-2', params: { delay: 150, duration: 420 } }">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Total pozitii</span>
-      <strong [@metricPulseMotion]="totalHoldings()">{{ totalHoldings() }}</strong>
+      <strong>{{ totalHoldings() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'portfolios-stat-3', params: { delay: 190, duration: 420 } }">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Capital investit</span>
-      <strong [@metricPulseMotion]="investedCapital()">{{ formatMoney(investedCapital()) }}</strong>
+      <strong>{{ formatMoney(investedCapital()) }}</strong>
     </nz-card>
   </div>
 
-  <nz-card nzTitle="Creeaza portofoliu" class="form-card" [@enterMotion]="{ value: 'portfolios-form', params: { delay: 230, duration: 500 } }">
+  <nz-card nzTitle="Creeaza portofoliu" class="form-card">
     <form nz-form [formGroup]="createForm" (ngSubmit)="createPortfolio()" class="portfolio-form">
       <nz-form-item>
         <nz-form-control nzErrorTip="Numele este obligatoriu">
@@ -48,19 +48,19 @@
     nzTitle="Portofoliile tale"
     [nzLoading]="loading()"
     class="board-card"
-    [@enterMotion]="{ value: 'portfolios-board', params: { delay: 280, duration: 520 } }"
+   
   >
     @if (portfolios().length === 0) {
       <p class="empty-state">Nu exista portofolii inca. Creeaza unul pentru a incepe monitorizarea.</p>
     } @else {
-      <nz-collapse class="portfolio-collapse" [@staggerChildrenMotion]="portfolios().length">
+      <nz-collapse class="portfolio-collapse">
         @for (portfolio of portfolios(); track portfolio.id; let i = $index) {
           <nz-collapse-panel
             [nzHeader]="portfolio.name"
             [nzExtra]="extraTpl"
             class="data-row stagger-item"
             [style.--row-index]="i"
-            [@listItemMotion]="{ value: portfolio.id, params: { delay: i * 40, duration: 340 } }"
+           
           >
             <ng-template #extraTpl>
               <button
@@ -95,7 +95,6 @@
             <div
               *ngIf="showValuation[portfolio.id] && valuationData[portfolio.id]"
               class="valuation-panel"
-              [@revealMotion]
             >
               <h4>Evaluare portofoliu</h4>
               <p><strong>Total investit:</strong> {{ valuationData[portfolio.id].totalInvested | number:'1.2-2' }}</p>
@@ -138,12 +137,12 @@
                   <th>Achizitionat la</th>
                 </tr>
               </thead>
-              <tbody [@staggerChildrenMotion]="holdingsTable.data.length">
+              <tbody>
                 @for (holding of holdingsTable.data; track holding.id; let holdingIndex = $index) {
                   <tr
                     class="data-row stagger-item"
                     [style.--row-index]="holdingIndex"
-                    [@listItemMotion]="{ value: holding.id, params: { delay: holdingIndex * 30, duration: 280 } }"
+                   
                   >
                     <td>{{ holding.symbol }}</td>
                     <td>{{ holding.quantity }}</td>
@@ -159,3 +158,4 @@
     }
   </nz-card>
 </div>
+

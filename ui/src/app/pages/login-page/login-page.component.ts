@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -10,7 +10,6 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { AuthService } from '../../core/auth.service';
-import { alertMotion, enterMotion, revealMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-login-page',
@@ -25,8 +24,7 @@ import { alertMotion, enterMotion, revealMotion, staggerChildrenMotion } from '.
     NzAlertModule
   ],
   templateUrl: './login-page.component.html',
-  styleUrl: './login-page.component.css',
-  animations: [enterMotion, staggerChildrenMotion, revealMotion, alertMotion]
+  styleUrl: './login-page.component.css'
 })
 export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);
@@ -81,3 +79,4 @@ export class LoginPageComponent {
     return `Autentificarea a esuat cu status ${error.status}.`;
   }
 }
+

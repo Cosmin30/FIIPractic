@@ -1,5 +1,5 @@
-<div class="admin-page market-page page-enter" [@enterMotion]="{ value: 'admin-page', params: { duration: 540 } }">
-  <section class="hero-strip glass-panel" [@enterMotion]="{ value: 'admin-hero', params: { delay: 70, duration: 500 } }">
+﻿<div class="admin-page market-page page-enter">
+  <section class="hero-strip glass-panel">
     <div>
       <p class="eyebrow">Control administrativ</p>
       <h1>Supervizare portofolii</h1>
@@ -8,20 +8,20 @@
     <button nz-button nzType="default" (click)="load()">Actualizeaza</button>
   </section>
 
-  <div class="stats-grid" [@staggerChildrenMotion]="totalPortfolios()">
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'admin-stat-1', params: { delay: 110, duration: 420 } }">
+  <div class="stats-grid">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Portofolii vizibile</span>
-      <strong [@metricPulseMotion]="totalPortfolios()">{{ totalPortfolios() }}</strong>
+      <strong>{{ totalPortfolios() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'admin-stat-2', params: { delay: 150, duration: 420 } }">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Active</span>
-      <strong [@metricPulseMotion]="activeCount()">{{ activeCount() }}</strong>
+      <strong>{{ activeCount() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'admin-stat-3', params: { delay: 190, duration: 420 } }">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Sterse</span>
-      <strong [@metricPulseMotion]="deletedCount()">{{ deletedCount() }}</strong>
+      <strong>{{ deletedCount() }}</strong>
     </nz-card>
   </div>
 
@@ -29,7 +29,7 @@
     nzTitle="Administrare - toate portofoliile"
     [nzLoading]="loading()"
     class="admin-card"
-    [@enterMotion]="{ value: 'admin-table-card', params: { delay: 230, duration: 520 } }"
+   
   >
     <div class="toolbar">
       <label>
@@ -51,12 +51,12 @@
           <th>Actiuni</th>
         </tr>
       </thead>
-      <tbody [@staggerChildrenMotion]="adminTable.data.length">
+      <tbody>
         @for (portfolio of adminTable.data; track portfolio.id; let i = $index) {
           <tr
             class="data-row stagger-item"
             [style.--row-index]="i"
-            [@listItemMotion]="{ value: portfolio.id, params: { delay: i * 35, duration: 300 } }"
+           
           >
             <td>{{ portfolio.id }}</td>
             <td>{{ portfolio.name }}</td>
@@ -77,7 +77,7 @@
           </tr>
           <tr *ngIf="showValuation[portfolio.id] && valuationData[portfolio.id]">
             <td colspan="8">
-              <div class="valuation-panel" [@revealMotion]>
+              <div class="valuation-panel">
                 <h4>Evaluare portofoliu</h4>
                 <p><strong>Total investit:</strong> {{ valuationData[portfolio.id].totalInvested | number:'1.2-2' }}</p>
                 <p><strong>Valoare curenta:</strong> {{ valuationData[portfolio.id].totalCurrentValue | number:'1.2-2' }}</p>
@@ -116,7 +116,7 @@
     </nz-table>
   </nz-card>
 
-  <nz-card nzTitle="Creeaza portofoliu nou" class="form-card" [@enterMotion]="{ value: 'admin-form-card', params: { delay: 280, duration: 500 } }">
+  <nz-card nzTitle="Creeaza portofoliu nou" class="form-card">
     <form nz-form [formGroup]="createForm" (ngSubmit)="createPortfolio()" class="portfolio-form">
       <nz-form-item>
         <nz-form-control nzErrorTip="Numele este obligatoriu">
@@ -132,3 +132,4 @@
     </form>
   </nz-card>
 </div>
+

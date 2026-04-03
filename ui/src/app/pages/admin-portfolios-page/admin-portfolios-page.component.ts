@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -11,7 +11,6 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { ApiService } from '../../core/api.service';
 import { Portfolio } from '../../core/models';
-import { enterMotion, listItemMotion, metricPulseMotion, revealMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 import { FormsModule } from '@angular/forms';
 
@@ -31,8 +30,7 @@ import { FormsModule } from '@angular/forms';
     NzInputModule
   ],
   templateUrl: './admin-portfolios-page.component.html',
-  styleUrl: './admin-portfolios-page.component.css',
-  animations: [enterMotion, listItemMotion, staggerChildrenMotion, metricPulseMotion, revealMotion]
+  styleUrl: './admin-portfolios-page.component.css'
 })
 export class AdminPortfoliosPageComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -111,3 +109,4 @@ export class AdminPortfoliosPageComponent implements OnInit {
     });
   }
 }
+

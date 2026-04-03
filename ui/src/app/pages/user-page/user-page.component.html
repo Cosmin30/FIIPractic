@@ -1,5 +1,5 @@
-<div class="user-page page-enter" [@enterMotion]="{ value: 'user-page', params: { duration: 540 } }">
-  <section class="hero-strip glass-panel" [@enterMotion]="{ value: 'user-hero', params: { delay: 70, duration: 500 } }">
+﻿<div class="user-page page-enter">
+  <section class="hero-strip glass-panel">
     <div>
       <p class="eyebrow">Centru utilizator</p>
       <h1>Profilul tau, intr-un tablou financiar clar</h1>
@@ -9,7 +9,7 @@
   </section>
 
   <div class="profile-grid">
-    <nz-card class="profile-card" [nzBordered]="false" [@enterMotion]="{ value: 'user-profile-card', params: { fromTransform: 'translate3d(-16px, 0, 0)', delay: 110, duration: 480 } }">
+    <nz-card class="profile-card" [nzBordered]="false">
       <nz-skeleton [nzLoading]="loading()" [nzActive]="true">
         <div class="identity-row">
           <nz-avatar class="profile-avatar" [nzText]="initials()" [nzSize]="80"></nz-avatar>
@@ -25,24 +25,24 @@
           </div>
         </div>
 
-        <div class="identity-stats" [@staggerChildrenMotion]="profileScore() + totalPortfolios() + totalHoldings()">
+        <div class="identity-stats">
           <article class="stagger-item">
             <span>Scor profil</span>
-            <strong [@metricPulseMotion]="profileScore()">{{ profileScore() }}%</strong>
+            <strong>{{ profileScore() }}%</strong>
           </article>
           <article class="stagger-item">
             <span>Portofolii</span>
-            <strong [@metricPulseMotion]="totalPortfolios()">{{ totalPortfolios() }}</strong>
+            <strong>{{ totalPortfolios() }}</strong>
           </article>
           <article class="stagger-item">
             <span>Pozitii</span>
-            <strong [@metricPulseMotion]="totalHoldings()">{{ totalHoldings() }}</strong>
+            <strong>{{ totalHoldings() }}</strong>
           </article>
         </div>
       </nz-skeleton>
     </nz-card>
 
-    <nz-card class="pulse-card" [nzBordered]="false" [@enterMotion]="{ value: 'user-pulse-card', params: { fromTransform: 'translate3d(16px, 0, 0)', delay: 140, duration: 480 } }">
+    <nz-card class="pulse-card" [nzBordered]="false">
       <nz-skeleton [nzLoading]="loading()" [nzActive]="true">
         <p class="card-label">Pulsul contului</p>
         <div class="score-ring">
@@ -54,7 +54,7 @@
           ></nz-progress>
         </div>
 
-        <ul class="insights" [@staggerChildrenMotion]="watchlistSize() + totalHoldings() + totalPortfolios()">
+        <ul class="insights">
           <li class="stagger-item">Ai {{ watchlistSize() }} simboluri in lista de monitorizare.</li>
           <li class="stagger-item">Capital investit: {{ formatMoney(investedCapital()) }}.</li>
           <li class="stagger-item">Valoare medie pe pozitie: {{ formatMoney(averagePosition()) }}.</li>
@@ -63,20 +63,21 @@
     </nz-card>
   </div>
 
-  <div class="stats-grid" [@staggerChildrenMotion]="watchlistSize() + totalPortfolios() + totalHoldings()">
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'user-stat-1', params: { delay: 220, duration: 420 } }">
+  <div class="stats-grid">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Simboluri urmarite</span>
-      <strong [@metricPulseMotion]="watchlistSize()"> {{ watchlistSize() }}</strong>
+      <strong> {{ watchlistSize() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'user-stat-2', params: { delay: 260, duration: 420 } }">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Capital investit</span>
-      <strong [@metricPulseMotion]="investedCapital()"> {{ formatMoney(investedCapital()) }}</strong>
+      <strong> {{ formatMoney(investedCapital()) }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'user-stat-3', params: { delay: 300, duration: 420 } }">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Valoare medie pozitie</span>
-      <strong [@metricPulseMotion]="averagePosition()"> {{ formatMoney(averagePosition()) }}</strong>
+      <strong> {{ formatMoney(averagePosition()) }}</strong>
     </nz-card>
   </div>
 </div>
+

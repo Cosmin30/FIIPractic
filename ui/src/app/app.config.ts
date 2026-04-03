@@ -5,7 +5,7 @@ import {
   provideZoneChangeDetection
 } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import roLocale from '@angular/common/locales/ro';
@@ -20,7 +20,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideAnimationsAsync(),
+    provideNoopAnimations(),
     provideNzI18n(ro_RO),
     { provide: LOCALE_ID, useValue: 'ro-RO' },
     provideHttpClient(withInterceptors([authInterceptor]))

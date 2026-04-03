@@ -1,8 +1,8 @@
-<div class="login-scene">
-  <div class="login-grid page-enter" [@enterMotion]="{ value: 'login-grid', params: { duration: 560 } }">
+﻿<div class="login-scene">
+  <div class="login-grid page-enter">
     <section
       class="intro-card glass-panel"
-      [@enterMotion]="{ value: 'intro', params: { fromTransform: 'translate3d(-18px, 0, 0)', delay: 70, duration: 520 } }"
+     
     >
       <p class="eyebrow">Platforma de stocuri</p>
       <h1>Construieste portofolii cu un flux clar si rapid.</h1>
@@ -11,7 +11,7 @@
         administrativa. Date reale, control simplu si decizii mai rapide.
       </p>
 
-      <div class="feature-list" [@staggerChildrenMotion]="3">
+      <div class="feature-list">
         <article class="feature-item stagger-item" style="--i: 0">
           <h4>Monitorizare live</h4>
           <p>Urmareste si actualizeaza instant simbolurile direct din dashboard.</p>
@@ -30,7 +30,7 @@
     <nz-card
       class="login-card"
       [nzBordered]="false"
-      [@enterMotion]="{ value: 'login-card', params: { fromTransform: 'translate3d(18px, 0, 0)', delay: 110, duration: 520 } }"
+     
     >
       <div class="login-header">
         <h2>Autentificare</h2>
@@ -38,8 +38,8 @@
       </div>
 
       @if (errorMessage) {
-        <div [@revealMotion]>
-          <nz-alert nzType="error" [nzMessage]="errorMessage" nzShowIcon [@alertMotion]></nz-alert>
+        <div>
+          <nz-alert nzType="error" [nzMessage]="errorMessage" nzShowIcon></nz-alert>
         </div>
       }
 
@@ -54,7 +54,7 @@
         <nz-form-item>
           <nz-form-control nzErrorTip="Parola este obligatorie">
             <label class="input-label">Parola</label>
-            <input nz-input type="password" formControlName="password" placeholder="••••••••" />
+            <input nz-input type="password" formControlName="password" placeholder="********" />
           </nz-form-control>
         </nz-form-item>
 

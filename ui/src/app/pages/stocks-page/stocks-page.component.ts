@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -11,7 +11,6 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { ApiService } from '../../core/api.service';
 import { Stock } from '../../core/models';
-import { enterMotion, metricPulseMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-stocks-page',
@@ -28,8 +27,7 @@ import { enterMotion, metricPulseMotion, staggerChildrenMotion } from '../../sha
     NzPopconfirmModule
   ],
   templateUrl: './stocks-page.component.html',
-  styleUrl: './stocks-page.component.css',
-  animations: [enterMotion, staggerChildrenMotion, metricPulseMotion]
+  styleUrl: './stocks-page.component.css'
 })
 export class StocksPageComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -139,3 +137,4 @@ export class StocksPageComponent implements OnInit {
     return `$${price.toFixed(2)}`;
   }
 }
+

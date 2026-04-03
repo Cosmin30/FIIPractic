@@ -1,7 +1,7 @@
-<nz-layout class="shell-layout">
+﻿<nz-layout class="shell-layout">
   <nz-header
     class="top-nav glass-panel"
-    [@enterMotion]="{ value: 'nav', params: { fromTransform: 'translate3d(0, -10px, 0)', duration: 520 } }"
+   
   >
     <a class="brand-zone" routerLink="/stocks" aria-label="Deschide pagina principala">
       <div class="brand-text">
@@ -10,7 +10,7 @@
       </div>
     </a>
 
-    <nav class="nav-links" aria-label="Navigatie principala" [@staggerChildrenMotion]="isAdmin() ? 4 : 3">
+    <nav class="nav-links" aria-label="Navigatie principala">
       <a class="stagger-item" routerLink="/stocks" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
         <span>Piata</span>
       </a>
@@ -37,7 +37,7 @@
       </a>
 
       @if (displayRoles().length > 0) {
-        <div class="roles-wrap" [@staggerChildrenMotion]="displayRoles().length">
+        <div class="roles-wrap">
           @for (role of displayRoles(); track role) {
             <nz-tag class="stagger-item" [nzColor]="roleColor(role)">{{ roleLabel(role) }}</nz-tag>
           }
@@ -49,13 +49,14 @@
   </nz-header>
 
   <nz-content class="shell-content">
-    <section class="headline-block" [@enterMotion]="{ value: 'headline', params: { delay: 80, duration: 460 } }">
+    <section class="headline-block">
       <p>Puls financiar</p>
       <h2>Pulsul pietei, organizat pe portofolii si roluri</h2>
     </section>
 
-    <div class="content-frame page-enter" [@enterMotion]="{ value: 'content', params: { delay: 140, duration: 520 } }">
+    <div class="content-frame page-enter">
       <router-outlet></router-outlet>
     </div>
   </nz-content>
 </nz-layout>
+

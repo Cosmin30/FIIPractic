@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -11,7 +11,6 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { Portfolio, Stock } from '../../core/models';
-import { enterMotion, metricPulseMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-user-page',
@@ -26,8 +25,7 @@ import { enterMotion, metricPulseMotion, staggerChildrenMotion } from '../../sha
     NzProgressModule
   ],
   templateUrl: './user-page.component.html',
-  styleUrl: './user-page.component.css',
-  animations: [enterMotion, staggerChildrenMotion, metricPulseMotion]
+  styleUrl: './user-page.component.css'
 })
 export class UserPageComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -148,3 +146,4 @@ export class UserPageComponent implements OnInit {
     });
   }
 }
+

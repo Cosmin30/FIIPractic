@@ -1,11 +1,10 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { AuthService } from '../../core/auth.service';
-import { enterMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-shell',
@@ -20,8 +19,7 @@ import { enterMotion, staggerChildrenMotion } from '../../shared/ui-animations';
     NzTagModule
   ],
   templateUrl: './app-shell.component.html',
-  styleUrl: './app-shell.component.css',
-  animations: [enterMotion, staggerChildrenMotion]
+  styleUrl: './app-shell.component.css'
 })
 export class AppShellComponent {
   private readonly authService = inject(AuthService);
@@ -72,3 +70,4 @@ export class AppShellComponent {
     this.authService.logout();
   }
 }
+
