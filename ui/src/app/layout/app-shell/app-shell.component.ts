@@ -5,6 +5,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { AuthService } from '../../core/auth.service';
+import { enterMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-shell',
@@ -19,18 +20,30 @@ import { AuthService } from '../../core/auth.service';
     NzTagModule
   ],
   templateUrl: './app-shell.component.html',
-  styleUrl: './app-shell.component.css'
+  styleUrl: './app-shell.component.css',
+  animations: [enterMotion, staggerChildrenMotion]
 })
 export class AppShellComponent {
   private readonly authService = inject(AuthService);
   private readonly roleMeta: Record<string, { label: string; color: string }> = {
-    ADMIN: { label: 'Administrator', color: 'volcano' },
-    PREMIUM: { label: 'Premium', color: 'gold' },
+    ADMIN: { label: 'Administrator', color: 'geekblue' },
+    PREMIUM: { label: 'Premium', color: 'blue' },
     USER: { label: 'Utilizator', color: 'cyan' }
   };
 
   readonly user = this.authService.user;
   readonly isAdmin = computed(() => this.authService.hasRole('ADMIN'));
+  readonly displayRoles = computed(() => {
+    const roles = (this.user()?.roles ?? [])
+      .map((role) => role.trim().toUpperCase())
+      .filter(Boolean);
+
+    if (roles.includes('ADMIN')) {
+      return ['ADMIN'];
+    }
+
+    return Array.from(new Set(roles));
+  });
   readonly initials = computed(() => {
     const raw = this.user()?.username?.trim();
     if (!raw) {

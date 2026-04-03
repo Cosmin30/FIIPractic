@@ -12,6 +12,7 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { ApiService } from '../../core/api.service';
 import { Portfolio } from '../../core/models';
+import { enterMotion, listItemMotion, metricPulseMotion, revealMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-portfolios-page',
@@ -29,7 +30,8 @@ import { Portfolio } from '../../core/models';
     NzPopconfirmModule
   ],
   templateUrl: './portfolios-page.component.html',
-  styleUrl: './portfolios-page.component.css'
+  styleUrl: './portfolios-page.component.css',
+  animations: [enterMotion, listItemMotion, staggerChildrenMotion, metricPulseMotion, revealMotion]
 })
 export class PortfoliosPageComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -120,6 +122,26 @@ export class PortfoliosPageComponent implements OnInit {
         this.loadPortfolios();
       },
       error: () => this.message.error('Stergerea portofoliului a esuat.')
+    });
+  }
+
+  refreshPortfolioPrices(portfolioId: number): void {
+    this.api.refreshPortfolioPrices(portfolioId).subscribe({
+      next: () => this.message.success('Cotatiile pentru acest portofoliu au fost puse in coada pentru actualizare.'),
+      error: () => this.message.error('Nu am putut pune in coada cotatiile pentru portofoliu.')
+    });
+  }
+
+  showValuation: Record<number, boolean> = {};
+  valuationData: Record<number, any> = {};
+
+  loadValuation(portfolioId: number): void {
+    this.api.getPortfolioValuation(portfolioId).subscribe({
+      next: (data) => {
+        this.valuationData[portfolioId] = data;
+        this.showValuation[portfolioId] = true;
+      },
+      error: () => this.message.error('Nu am putut incarca evaluarea portofoliului.')
     });
   }
 

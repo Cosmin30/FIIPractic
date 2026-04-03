@@ -63,4 +63,16 @@ export class ApiService {
     const params = new HttpParams().set('includeDeleted', includeDeleted);
     return this.http.get<Portfolio[]>('/api/portfolios/all', { params });
   }
+
+  refreshAllStocks(): Observable<any> {
+    return this.http.post('/api/stocks/refresh', {});
+  }
+
+  refreshPortfolioPrices(portfolioId: number): Observable<any> {
+    return this.http.post(`/api/portfolios/${portfolioId}/refresh`, {});
+  }
+
+  getPortfolioValuation(portfolioId: number): Observable<any> {
+    return this.http.get(`/api/portfolios/${portfolioId}/valuation`);
+  }
 }

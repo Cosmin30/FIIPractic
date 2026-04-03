@@ -1,5 +1,5 @@
-<div class="admin-page market-page page-enter">
-  <section class="hero-strip glass-panel">
+<div class="admin-page market-page page-enter" [@enterMotion]="{ value: 'admin-page', params: { duration: 540 } }">
+  <section class="hero-strip glass-panel" [@enterMotion]="{ value: 'admin-hero', params: { delay: 70, duration: 500 } }">
     <div>
       <p class="eyebrow">Control administrativ</p>
       <h1>Supervizare portofolii</h1>
@@ -8,24 +8,29 @@
     <button nz-button nzType="default" (click)="load()">Actualizeaza</button>
   </section>
 
-  <div class="stats-grid">
-    <nz-card class="stat-card" [nzBordered]="false">
+  <div class="stats-grid" [@staggerChildrenMotion]="totalPortfolios()">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'admin-stat-1', params: { delay: 110, duration: 420 } }">
       <span class="label">Portofolii vizibile</span>
-      <strong>{{ totalPortfolios() }}</strong>
+      <strong [@metricPulseMotion]="totalPortfolios()">{{ totalPortfolios() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card" [nzBordered]="false">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'admin-stat-2', params: { delay: 150, duration: 420 } }">
       <span class="label">Active</span>
-      <strong>{{ activeCount() }}</strong>
+      <strong [@metricPulseMotion]="activeCount()">{{ activeCount() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card" [nzBordered]="false">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'admin-stat-3', params: { delay: 190, duration: 420 } }">
       <span class="label">Sterse</span>
-      <strong>{{ deletedCount() }}</strong>
+      <strong [@metricPulseMotion]="deletedCount()">{{ deletedCount() }}</strong>
     </nz-card>
   </div>
 
-  <nz-card nzTitle="Administrare - toate portofoliile" [nzLoading]="loading()" class="admin-card">
+  <nz-card
+    nzTitle="Administrare - toate portofoliile"
+    [nzLoading]="loading()"
+    class="admin-card"
+    [@enterMotion]="{ value: 'admin-table-card', params: { delay: 230, duration: 520 } }"
+  >
     <div class="toolbar">
       <label>
         <span>Include portofolii sterse</span>
@@ -33,7 +38,7 @@
       </label>
     </div>
 
-    <nz-table [nzData]="portfolios()" [nzPageSize]="10">
+    <nz-table #adminTable [nzData]="portfolios()" [nzPageSize]="10">
       <thead>
         <tr>
           <th>ID</th>
@@ -43,25 +48,87 @@
           <th>Status</th>
           <th>Sters de</th>
           <th>Pozitii</th>
+          <th>Actiuni</th>
         </tr>
       </thead>
-      <tbody>
-        @for (portfolio of portfolios(); track portfolio.id; let i = $index) {
-          <tr class="data-row" [style.--row-index]="i">
+      <tbody [@staggerChildrenMotion]="adminTable.data.length">
+        @for (portfolio of adminTable.data; track portfolio.id; let i = $index) {
+          <tr
+            class="data-row stagger-item"
+            [style.--row-index]="i"
+            [@listItemMotion]="{ value: portfolio.id, params: { delay: i * 35, duration: 300 } }"
+          >
             <td>{{ portfolio.id }}</td>
             <td>{{ portfolio.name }}</td>
             <td>{{ portfolio.description || '-' }}</td>
             <td>{{ portfolio.createdAt | date: 'short' }}</td>
             <td>
-              <nz-tag [nzColor]="portfolio.deleted ? 'volcano' : 'green'">
+              <nz-tag [nzColor]="portfolio.deleted ? 'geekblue' : 'cyan'">
                 {{ portfolio.deleted ? 'STERS' : 'ACTIV' }}
               </nz-tag>
             </td>
             <td>{{ portfolio.deletedBy || '-' }}</td>
             <td>{{ portfolio.holdings.length }}</td>
+            <td>
+              <button nz-button nzType="default" nzDanger nzSize="small" (click)="deletePortfolio(portfolio.id)">Sterge</button>
+              <button nz-button nzType="default" nzSize="small" (click)="refreshPortfolioPrices(portfolio.id)">Actualizeaza toate cotatiile</button>
+              <button nz-button nzType="default" nzSize="small" (click)="loadValuation(portfolio.id)">Vezi evaluare</button>
+            </td>
+          </tr>
+          <tr *ngIf="showValuation[portfolio.id] && valuationData[portfolio.id]">
+            <td colspan="8">
+              <div class="valuation-panel" [@revealMotion]>
+                <h4>Evaluare portofoliu</h4>
+                <p><strong>Total investit:</strong> {{ valuationData[portfolio.id].totalInvested | number:'1.2-2' }}</p>
+                <p><strong>Valoare curenta:</strong> {{ valuationData[portfolio.id].totalCurrentValue | number:'1.2-2' }}</p>
+                <p><strong>P/L:</strong> {{ valuationData[portfolio.id].totalProfitLoss | number:'1.2-2' }} ({{ valuationData[portfolio.id].totalProfitLossPercent | number:'1.2-2' }}%)</p>
+                <nz-table #valuationTable [nzData]="valuationData[portfolio.id].positions" [nzPageSize]="5" [nzSize]="'small'">
+                  <thead>
+                    <tr>
+                      <th>Simbol</th>
+                      <th>Cantitate</th>
+                      <th>Pret mediu</th>
+                      <th>Pret curent</th>
+                      <th>Investit</th>
+                      <th>Valoare curenta</th>
+                      <th>P/L</th>
+                      <th>P/L %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let pos of valuationTable.data">
+                      <td>{{ pos.symbol }}</td>
+                      <td>{{ pos.totalQuantity }}</td>
+                      <td>{{ pos.averagePurchasePrice | number:'1.2-2' }}</td>
+                      <td>{{ pos.currentPrice | number:'1.2-2' }}</td>
+                      <td>{{ pos.invested | number:'1.2-2' }}</td>
+                      <td>{{ pos.currentValue | number:'1.2-2' }}</td>
+                      <td>{{ pos.profitLoss | number:'1.2-2' }}</td>
+                      <td>{{ pos.profitLossPercent | number:'1.2-2' }}</td>
+                    </tr>
+                  </tbody>
+                </nz-table>
+              </div>
+            </td>
           </tr>
         }
       </tbody>
     </nz-table>
+  </nz-card>
+
+  <nz-card nzTitle="Creeaza portofoliu nou" class="form-card" [@enterMotion]="{ value: 'admin-form-card', params: { delay: 280, duration: 500 } }">
+    <form nz-form [formGroup]="createForm" (ngSubmit)="createPortfolio()" class="portfolio-form">
+      <nz-form-item>
+        <nz-form-control nzErrorTip="Numele este obligatoriu">
+          <input nz-input formControlName="name" placeholder="Nume portofoliu" />
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item>
+        <nz-form-control>
+          <input nz-input formControlName="description" placeholder="Descriere (optional)" />
+        </nz-form-control>
+      </nz-form-item>
+      <button nz-button nzType="primary">Creeaza portofoliu</button>
+    </form>
   </nz-card>
 </div>

@@ -1,50 +1,232 @@
+﻿.portfolios-page {
+  display: grid;
+  gap: 18px;
+}
+
+.portfolios-page .hero-strip {
+  border-radius: 22px;
+  padding: 22px;
+  animation: pf-hero-enter 0.72s cubic-bezier(0.2, 0.68, 0.2, 1) both;
+}
+
+.form-card,
+.board-card {
+  border-radius: 20px;
+}
+
+.form-card {
+  animation: pf-card-rise 0.66s cubic-bezier(0.2, 0.68, 0.2, 1) 80ms both;
+}
+
+.board-card {
+  animation: pf-card-rise 0.66s cubic-bezier(0.2, 0.68, 0.2, 1) 130ms both;
+}
+
 .portfolio-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: minmax(200px, 1fr) minmax(260px, 1.4fr) auto auto;
   gap: 10px;
+  align-items: center;
+  animation: pf-form-enter 0.62s cubic-bezier(0.2, 0.68, 0.2, 1) 150ms both;
 }
 
 .portfolio-form nz-form-item {
   margin-bottom: 0;
 }
 
-.form-card,
-.board-card {
-  border-radius: 18px;
-}
-
 .meta {
   color: #4b627e;
   margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed #d4e4f4;
+  background: rgba(255, 255, 255, 0.65);
 }
 
 .separator {
   margin: 0 8px;
+  color: #9ab0c7;
 }
 
 .buy-form {
-  display: flex;
+  display: grid;
+  grid-template-columns: 190px 130px 130px auto;
   gap: 8px;
-  flex-wrap: wrap;
-  margin: 10px 0 14px;
+  align-items: center;
+  margin: 10px 0 12px;
+  animation: pf-buy-enter 0.56s cubic-bezier(0.2, 0.68, 0.2, 1) both;
 }
 
 .buy-form input {
-  width: 160px;
+  width: 100%;
 }
 
-.portfolio-collapse {
-  border-radius: 12px;
+:host ::ng-deep .buy-form .ant-input-number {
+  width: 100%;
 }
 
 :host ::ng-deep .portfolio-collapse .ant-collapse-item {
   border-radius: 14px;
   margin-bottom: 10px;
-  border: 1px solid #dce8f6;
+  border: 1px solid #d9e8f5;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.64);
+  animation: pf-collapse-rise 0.56s cubic-bezier(0.2, 0.68, 0.2, 1) both;
+}
+
+:host ::ng-deep .portfolio-collapse .ant-collapse-item:nth-child(2) {
+  animation-delay: 60ms;
+}
+
+:host ::ng-deep .portfolio-collapse .ant-collapse-item:nth-child(3) {
+  animation-delay: 110ms;
+}
+
+:host ::ng-deep .portfolio-collapse .ant-collapse-item:nth-child(4) {
+  animation-delay: 160ms;
+}
+
+:host ::ng-deep .portfolio-collapse .ant-collapse-header {
+  font-weight: 700;
+  color: #173753;
+  background: linear-gradient(120deg, rgba(238, 246, 255, 0.7), rgba(247, 253, 252, 0.65));
+}
+
+:host ::ng-deep .portfolio-collapse .ant-collapse-content {
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .empty-state {
   margin: 0;
   color: #4e6078;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px dashed #cedff0;
+  background: rgba(255, 255, 255, 0.65);
 }
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.panel-actions .ant-btn {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.panel-actions .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 16px rgba(16, 36, 60, 0.12);
+}
+
+.valuation-panel {
+  margin: 12px 0 0;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #d8e7f6;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(246, 252, 255, 0.78));
+  animation: pf-valuation-pop 0.46s cubic-bezier(0.2, 0.68, 0.2, 1) both;
+}
+
+.valuation-panel h4 {
+  margin: 0 0 10px;
+  color: #123555;
+}
+
+.valuation-panel p {
+  margin: 0 0 6px;
+  color: #3f5872;
+}
+
+@media (max-width: 1040px) {
+  .portfolio-form {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-form .ant-btn {
+    width: 100%;
+  }
+
+  .buy-form {
+    grid-template-columns: 1fr;
+  }
+
+  .buy-form .ant-btn {
+    width: 100%;
+  }
+}
+
+@keyframes pf-hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pf-card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pf-form-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pf-buy-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pf-collapse-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pf-valuation-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+

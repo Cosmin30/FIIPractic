@@ -60,9 +60,7 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem(this.accessTokenKey);
-    localStorage.removeItem(this.refreshTokenKey);
-    this._user.set(null);
+    this.clearSession();
     this.router.navigate(['/login']);
   }
 
@@ -77,8 +75,21 @@ export class AuthService {
   private fetchCurrentUser(): Observable<UserInfo> {
     return this.api.whoAmI().pipe(
       map((user) => ({ ...user, roles: user.roles ?? [] })),
-      tap((user) => this._user.set(user))
+      tap((user) => this._user.set(user)),
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401 || error.status === 403) {
+          this.clearSession();
+        }
+
+        return throwError(() => error);
+      })
     );
+  }
+
+  private clearSession(): void {
+    localStorage.removeItem(this.accessTokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
+    this._user.set(null);
   }
 
   private requestToken(username: string, password: string): Observable<TokenResponse> {

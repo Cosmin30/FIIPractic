@@ -11,6 +11,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { Portfolio, Stock } from '../../core/models';
+import { enterMotion, metricPulseMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-user-page',
@@ -25,15 +26,16 @@ import { Portfolio, Stock } from '../../core/models';
     NzProgressModule
   ],
   templateUrl: './user-page.component.html',
-  styleUrl: './user-page.component.css'
+  styleUrl: './user-page.component.css',
+  animations: [enterMotion, staggerChildrenMotion, metricPulseMotion]
 })
 export class UserPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly authService = inject(AuthService);
   private readonly message = inject(NzMessageService);
   private readonly roleMeta: Record<string, { label: string; color: string }> = {
-    ADMIN: { label: 'Administrator', color: 'volcano' },
-    PREMIUM: { label: 'Premium', color: 'gold' },
+    ADMIN: { label: 'Administrator', color: 'geekblue' },
+    PREMIUM: { label: 'Premium', color: 'blue' },
     USER: { label: 'Utilizator', color: 'cyan' }
   };
 

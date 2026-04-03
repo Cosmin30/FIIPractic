@@ -1,5 +1,45 @@
+﻿.admin-page {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-page .hero-strip {
+  border-radius: 22px;
+  padding: 22px;
+  animation: admin-hero-enter 0.72s cubic-bezier(0.2, 0.68, 0.2, 1) both;
+}
+
+.admin-card,
+.form-card {
+  border-radius: 20px;
+}
+
+.admin-card {
+  animation: admin-card-enter 0.68s cubic-bezier(0.2, 0.68, 0.2, 1) 80ms both;
+}
+
+.form-card {
+  animation: admin-card-enter 0.68s cubic-bezier(0.2, 0.68, 0.2, 1) 130ms both;
+}
+
 .toolbar {
+  position: relative;
+  overflow: hidden;
   margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #d5e5f3;
+  background: rgba(255, 255, 255, 0.66);
+  animation: admin-toolbar-enter 0.58s cubic-bezier(0.2, 0.68, 0.2, 1) 120ms both;
+}
+
+.toolbar::after {
+  content: '';
+  position: absolute;
+  inset: auto -40% 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.5), transparent);
+  animation: admin-toolbar-scan 5.8s linear infinite;
 }
 
 .toolbar label {
@@ -10,6 +50,129 @@
   font-weight: 600;
 }
 
-.admin-card {
-  border-radius: 18px;
+:host ::ng-deep .admin-card .ant-table-tbody > tr > td:last-child {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
+
+:host ::ng-deep .admin-card .ant-table-tbody > tr > td:last-child .ant-btn {
+  min-width: 92px;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+:host ::ng-deep .admin-card .ant-table-tbody > tr > td:last-child .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 16px rgba(16, 36, 60, 0.12);
+}
+
+.valuation-panel {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #d8e7f6;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(246, 252, 255, 0.78));
+  animation: admin-valuation-pop 0.46s cubic-bezier(0.2, 0.68, 0.2, 1) both;
+}
+
+.valuation-panel h4 {
+  margin: 0 0 10px;
+  color: #123555;
+}
+
+.valuation-panel p {
+  margin: 0 0 6px;
+  color: #3f5872;
+}
+
+.portfolio-form {
+  display: grid;
+  grid-template-columns: minmax(210px, 1fr) minmax(260px, 1.4fr) auto;
+  gap: 10px;
+  align-items: center;
+  animation: admin-form-enter 0.58s cubic-bezier(0.2, 0.68, 0.2, 1) both;
+}
+
+.portfolio-form nz-form-item {
+  margin-bottom: 0;
+}
+
+@media (max-width: 980px) {
+  .portfolio-form {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-form .ant-btn {
+    width: 100%;
+  }
+}
+
+@keyframes admin-hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes admin-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes admin-toolbar-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes admin-toolbar-scan {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes admin-valuation-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes admin-form-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+

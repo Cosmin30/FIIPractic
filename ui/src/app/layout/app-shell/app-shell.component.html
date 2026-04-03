@@ -1,5 +1,8 @@
 <nz-layout class="shell-layout">
-  <nz-header class="top-nav glass-panel">
+  <nz-header
+    class="top-nav glass-panel"
+    [@enterMotion]="{ value: 'nav', params: { fromTransform: 'translate3d(0, -10px, 0)', duration: 520 } }"
+  >
     <a class="brand-zone" routerLink="/stocks" aria-label="Deschide pagina principala">
       <div class="brand-text">
         <span class="brand-title">Stock Canvas</span>
@@ -7,18 +10,18 @@
       </div>
     </a>
 
-    <nav class="nav-links" aria-label="Navigatie principala">
-      <a routerLink="/stocks" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+    <nav class="nav-links" aria-label="Navigatie principala" [@staggerChildrenMotion]="isAdmin() ? 4 : 3">
+      <a class="stagger-item" routerLink="/stocks" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
         <span>Piata</span>
       </a>
-      <a routerLink="/portfolios" routerLinkActive="is-active">
+      <a class="stagger-item" routerLink="/portfolios" routerLinkActive="is-active">
         <span>Portofolii</span>
       </a>
-      <a routerLink="/utilizator" routerLinkActive="is-active">
+      <a class="stagger-item" routerLink="/utilizator" routerLinkActive="is-active">
         <span>Utilizator</span>
       </a>
       @if (isAdmin()) {
-        <a routerLink="/admin/portfolios" routerLinkActive="is-active">
+        <a class="stagger-item" routerLink="/admin/portfolios" routerLinkActive="is-active">
           <span>Administrare</span>
         </a>
       }
@@ -33,10 +36,10 @@
         </div>
       </a>
 
-      @if ((user()?.roles || []).length > 0) {
-        <div class="roles-wrap">
-          @for (role of user()?.roles || []; track role) {
-            <nz-tag [nzColor]="roleColor(role)">{{ roleLabel(role) }}</nz-tag>
+      @if (displayRoles().length > 0) {
+        <div class="roles-wrap" [@staggerChildrenMotion]="displayRoles().length">
+          @for (role of displayRoles(); track role) {
+            <nz-tag class="stagger-item" [nzColor]="roleColor(role)">{{ roleLabel(role) }}</nz-tag>
           }
         </div>
       }
@@ -46,12 +49,12 @@
   </nz-header>
 
   <nz-content class="shell-content">
-    <section class="headline-block">
+    <section class="headline-block" [@enterMotion]="{ value: 'headline', params: { delay: 80, duration: 460 } }">
       <p>Puls financiar</p>
       <h2>Pulsul pietei, organizat pe portofolii si roluri</h2>
     </section>
 
-    <div class="content-frame page-enter">
+    <div class="content-frame page-enter" [@enterMotion]="{ value: 'content', params: { delay: 140, duration: 520 } }">
       <router-outlet></router-outlet>
     </div>
   </nz-content>

@@ -1,5 +1,5 @@
-<div class="portfolios-page market-page page-enter">
-  <section class="hero-strip glass-panel">
+<div class="portfolios-page market-page page-enter" [@enterMotion]="{ value: 'portfolios-page', params: { duration: 540 } }">
+  <section class="hero-strip glass-panel" [@enterMotion]="{ value: 'portfolios-hero', params: { delay: 70, duration: 500 } }">
     <div>
       <p class="eyebrow">Tablou portofolii</p>
       <h1>Atelierul tau de capital</h1>
@@ -8,24 +8,24 @@
     <button nz-button nzType="default" (click)="loadPortfolios()">Actualizeaza tabloul</button>
   </section>
 
-  <div class="stats-grid">
-    <nz-card class="stat-card" [nzBordered]="false">
+  <div class="stats-grid" [@staggerChildrenMotion]="totalPortfolios()">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'portfolios-stat-1', params: { delay: 110, duration: 420 } }">
       <span class="label">Portofolii</span>
-      <strong>{{ totalPortfolios() }}</strong>
+      <strong [@metricPulseMotion]="totalPortfolios()">{{ totalPortfolios() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card" [nzBordered]="false">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'portfolios-stat-2', params: { delay: 150, duration: 420 } }">
       <span class="label">Total pozitii</span>
-      <strong>{{ totalHoldings() }}</strong>
+      <strong [@metricPulseMotion]="totalHoldings()">{{ totalHoldings() }}</strong>
     </nz-card>
 
-    <nz-card class="stat-card" [nzBordered]="false">
+    <nz-card class="stat-card stagger-item" [nzBordered]="false" [@enterMotion]="{ value: 'portfolios-stat-3', params: { delay: 190, duration: 420 } }">
       <span class="label">Capital investit</span>
-      <strong>{{ formatMoney(investedCapital()) }}</strong>
+      <strong [@metricPulseMotion]="investedCapital()">{{ formatMoney(investedCapital()) }}</strong>
     </nz-card>
   </div>
 
-  <nz-card nzTitle="Creeaza portofoliu" class="form-card">
+  <nz-card nzTitle="Creeaza portofoliu" class="form-card" [@enterMotion]="{ value: 'portfolios-form', params: { delay: 230, duration: 500 } }">
     <form nz-form [formGroup]="createForm" (ngSubmit)="createPortfolio()" class="portfolio-form">
       <nz-form-item>
         <nz-form-control nzErrorTip="Numele este obligatoriu">
@@ -44,13 +44,24 @@
     </form>
   </nz-card>
 
-  <nz-card nzTitle="Portofoliile tale" [nzLoading]="loading()" class="board-card">
+  <nz-card
+    nzTitle="Portofoliile tale"
+    [nzLoading]="loading()"
+    class="board-card"
+    [@enterMotion]="{ value: 'portfolios-board', params: { delay: 280, duration: 520 } }"
+  >
     @if (portfolios().length === 0) {
       <p class="empty-state">Nu exista portofolii inca. Creeaza unul pentru a incepe monitorizarea.</p>
     } @else {
-      <nz-collapse class="portfolio-collapse">
+      <nz-collapse class="portfolio-collapse" [@staggerChildrenMotion]="portfolios().length">
         @for (portfolio of portfolios(); track portfolio.id; let i = $index) {
-          <nz-collapse-panel [nzHeader]="portfolio.name" [nzExtra]="extraTpl" class="data-row" [style.--row-index]="i">
+          <nz-collapse-panel
+            [nzHeader]="portfolio.name"
+            [nzExtra]="extraTpl"
+            class="data-row stagger-item"
+            [style.--row-index]="i"
+            [@listItemMotion]="{ value: portfolio.id, params: { delay: i * 40, duration: 340 } }"
+          >
             <ng-template #extraTpl>
               <button
                 nz-button
@@ -77,7 +88,48 @@
               <button nz-button nzType="primary" nzSize="small">Cumpara actiune</button>
             </form>
 
-            <nz-table [nzData]="portfolio.holdings" [nzPageSize]="5" [nzSize]="'small'">
+            <div class="panel-actions">
+              <button nz-button nzType="default" nzSize="small" (click)="refreshPortfolioPrices(portfolio.id)">Actualizeaza toate cotatiile</button>
+              <button nz-button nzType="default" nzSize="small" (click)="loadValuation(portfolio.id)">Vezi evaluare</button>
+            </div>
+            <div
+              *ngIf="showValuation[portfolio.id] && valuationData[portfolio.id]"
+              class="valuation-panel"
+              [@revealMotion]
+            >
+              <h4>Evaluare portofoliu</h4>
+              <p><strong>Total investit:</strong> {{ valuationData[portfolio.id].totalInvested | number:'1.2-2' }}</p>
+              <p><strong>Valoare curenta:</strong> {{ valuationData[portfolio.id].totalCurrentValue | number:'1.2-2' }}</p>
+              <p><strong>P/L:</strong> {{ valuationData[portfolio.id].totalProfitLoss | number:'1.2-2' }} ({{ valuationData[portfolio.id].totalProfitLossPercent | number:'1.2-2' }}%)</p>
+              <nz-table #valuationTable [nzData]="valuationData[portfolio.id].positions" [nzPageSize]="5" [nzSize]="'small'">
+                <thead>
+                  <tr>
+                    <th>Simbol</th>
+                    <th>Cantitate</th>
+                    <th>Pret mediu</th>
+                    <th>Pret curent</th>
+                    <th>Investit</th>
+                    <th>Valoare curenta</th>
+                    <th>P/L</th>
+                    <th>P/L %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let pos of valuationTable.data">
+                    <td>{{ pos.symbol }}</td>
+                    <td>{{ pos.totalQuantity }}</td>
+                    <td>{{ pos.averagePurchasePrice | number:'1.2-2' }}</td>
+                    <td>{{ pos.currentPrice | number:'1.2-2' }}</td>
+                    <td>{{ pos.invested | number:'1.2-2' }}</td>
+                    <td>{{ pos.currentValue | number:'1.2-2' }}</td>
+                    <td>{{ pos.profitLoss | number:'1.2-2' }}</td>
+                    <td>{{ pos.profitLossPercent | number:'1.2-2' }}</td>
+                  </tr>
+                </tbody>
+              </nz-table>
+            </div>
+
+            <nz-table #holdingsTable [nzData]="portfolio.holdings" [nzPageSize]="5" [nzSize]="'small'">
               <thead>
                 <tr>
                   <th>Simbol</th>
@@ -86,9 +138,13 @@
                   <th>Achizitionat la</th>
                 </tr>
               </thead>
-              <tbody>
-                @for (holding of portfolio.holdings; track holding.id; let holdingIndex = $index) {
-                  <tr class="data-row" [style.--row-index]="holdingIndex">
+              <tbody [@staggerChildrenMotion]="holdingsTable.data.length">
+                @for (holding of holdingsTable.data; track holding.id; let holdingIndex = $index) {
+                  <tr
+                    class="data-row stagger-item"
+                    [style.--row-index]="holdingIndex"
+                    [@listItemMotion]="{ value: holding.id, params: { delay: holdingIndex * 30, duration: 280 } }"
+                  >
                     <td>{{ holding.symbol }}</td>
                     <td>{{ holding.quantity }}</td>
                     <td>{{ formatMoney(holding.purchasePrice) }}</td>

@@ -10,6 +10,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { AuthService } from '../../core/auth.service';
+import { alertMotion, enterMotion, revealMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-login-page',
@@ -24,7 +25,8 @@ import { AuthService } from '../../core/auth.service';
     NzAlertModule
   ],
   templateUrl: './login-page.component.html',
-  styleUrl: './login-page.component.css'
+  styleUrl: './login-page.component.css',
+  animations: [enterMotion, staggerChildrenMotion, revealMotion, alertMotion]
 })
 export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);

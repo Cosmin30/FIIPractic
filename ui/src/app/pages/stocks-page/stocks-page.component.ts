@@ -11,6 +11,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { ApiService } from '../../core/api.service';
 import { Stock } from '../../core/models';
+import { enterMotion, metricPulseMotion, staggerChildrenMotion } from '../../shared/ui-animations';
 
 @Component({
   selector: 'app-stocks-page',
@@ -27,7 +28,8 @@ import { Stock } from '../../core/models';
     NzPopconfirmModule
   ],
   templateUrl: './stocks-page.component.html',
-  styleUrl: './stocks-page.component.css'
+  styleUrl: './stocks-page.component.css',
+  animations: [enterMotion, staggerChildrenMotion, metricPulseMotion]
 })
 export class StocksPageComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -91,6 +93,16 @@ export class StocksPageComponent implements OnInit {
         this.loadStocks();
       },
       error: () => this.message.error(`Nu am putut actualiza ${symbol}.`)
+    });
+  }
+
+  refreshAllPrices(): void {
+    this.api.refreshAllStocks().subscribe({
+      next: () => {
+        this.message.success('Toate cotatiile au fost puse in coada pentru actualizare.');
+        this.loadStocks();
+      },
+      error: () => this.message.error('Nu am putut pune in coada toate cotatiile.')
     });
   }
 
