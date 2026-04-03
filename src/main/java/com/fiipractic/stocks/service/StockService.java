@@ -2,8 +2,10 @@ package com.fiipractic.stocks.service;
 
 import com.fiipractic.stocks.dto.StockDTO;
 import com.fiipractic.stocks.exception.StockAlreadyExistsException;
+import com.fiipractic.stocks.exception.StockInUseException;
 import com.fiipractic.stocks.exception.StockNotFoundException;
 import com.fiipractic.stocks.model.Stock;
+import com.fiipractic.stocks.repository.PortfolioHoldingRepository;
 import com.fiipractic.stocks.repository.StockRepository;
 
 import org.springframework.stereotype.Service;
@@ -18,16 +20,20 @@ import java.util.stream.Collectors;
 public class StockService {
 
     private final StockRepository stockRepository;
+    private final PortfolioHoldingRepository portfolioHoldingRepository;
     private final AlphaVantageClient alphaVantageClient;
 
-    public StockService(StockRepository stockRepository, AlphaVantageClient alphaVantageClient) {
+    public StockService(StockRepository stockRepository,
+                        PortfolioHoldingRepository portfolioHoldingRepository,
+                        AlphaVantageClient alphaVantageClient) {
         this.stockRepository = stockRepository;
+        this.portfolioHoldingRepository = portfolioHoldingRepository;
         this.alphaVantageClient = alphaVantageClient;
     }
 
     @Transactional
     public StockDTO createStock(String symbol) {
-        String normalized = symbol.toUpperCase();
+        String normalized = normalize(symbol);
         if (stockRepository.findBySymbol(normalized).isPresent()) {
             throw new StockAlreadyExistsException("Stock with symbol '" + normalized + "' already exists");
         }
@@ -48,7 +54,7 @@ public class StockService {
     }
     @Transactional
     public StockDTO refreshPrice(String symbol) {
-        String normalized = symbol.toUpperCase();
+        String normalized = normalize(symbol);
 
         Stock stock = stockRepository.findBySymbol(normalized)
                 .orElseThrow(() -> new StockNotFoundException("Stock not found: " + normalized));
@@ -64,27 +70,53 @@ public class StockService {
     }
     @Transactional(readOnly = true)
     public StockDTO getStockBySymbol(String symbol) {
-        Stock stock = stockRepository.findBySymbol(symbol.toUpperCase()).orElseThrow(() -> new StockNotFoundException("Stock not found with symbol: " + symbol));
+        Stock stock = stockRepository.findBySymbol(normalize(symbol))
+                .orElseThrow(() -> new StockNotFoundException("Stock not found with symbol: " + symbol));
         return toDTO(stock);
     }
 
     @Transactional
     public StockDTO updateStock(Long id, String symbol) {
+        String normalized = normalize(symbol);
+
         Stock stock = stockRepository.findById(id)
                 .orElseThrow(() -> new StockNotFoundException("Stock not found with id: " + id));
-        stock.setSymbol(symbol.toUpperCase());
+
+        if (stock.getSymbol().equalsIgnoreCase(normalized)) {
+            return toDTO(stock);
+        }
+
+        stockRepository.findBySymbol(normalized)
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new StockAlreadyExistsException("Stock with symbol '" + normalized + "' already exists");
+                });
+
+        stock.setSymbol(normalized);
         return toDTO(stockRepository.save(stock));
     }
 
     @Transactional
     public void deleteStock(Long id) {
+        if (!stockRepository.existsById(id)) {
+            throw new StockNotFoundException("Stock not found with id: " + id);
+        }
+
+        if (portfolioHoldingRepository.existsByStockId(id)) {
+            throw new StockInUseException("Symbolul este folosit in portofolii si nu poate fi sters.");
+        }
+
         stockRepository.deleteById(id);
     }
 
     Stock findOrCreate(String symbol) {
-        String normalized = symbol.toUpperCase();
+        String normalized = normalize(symbol);
         return stockRepository.findBySymbol(normalized)
                 .orElseGet(() -> stockRepository.save(Stock.builder().symbol(normalized).build()));
+    }
+
+    private String normalize(String symbol) {
+        return symbol == null ? "" : symbol.trim().toUpperCase();
     }
 
     private StockDTO toDTO(Stock s) {

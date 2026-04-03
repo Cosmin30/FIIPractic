@@ -8,4 +8,5 @@ import java.util.List;
 
 @Repository
 public interface PortfolioHoldingRepository extends JpaRepository<PortfolioHolding, Long> {
+	boolean existsByStockId(Long stockId);
 }
