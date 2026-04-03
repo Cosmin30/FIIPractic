@@ -104,6 +104,21 @@ public class PortfolioService {
         return toDTO(portfolio);
     }
 
+        @Transactional
+        public PortfolioDTO sellHolding(String userId, Long portfolioId, Long holdingId) {
+                Portfolio portfolio = portfolioRepository.findByIdAndDeletedFalse(portfolioId)
+                                .filter(p -> p.getUserId().equals(userId))
+                                .orElseThrow(() -> new UnauthorizedException("Portfolio not found or access denied"));
+
+                PortfolioHolding holding = holdingRepository.findByIdAndPortfolioId(holdingId, portfolioId)
+                                .orElseThrow(() -> new PortfolioNotFoundException("Holding not found in portfolio: " + holdingId));
+
+                holdingRepository.delete(holding);
+                portfolio.getHoldings().removeIf(existing -> existing.getId().equals(holdingId));
+
+                return toDTO(portfolio);
+        }
+
     @Transactional
     public void deletePortfolio(Jwt jwt, Long portfolioId) {
         Portfolio portfolio = portfolioRepository.findByIdAndDeletedFalse(portfolioId)
@@ -120,10 +135,16 @@ public class PortfolioService {
         portfolio.setDeletedAt(LocalDateTime.now());
     }
 
-    public RefreshResponseDTO refreshPortfolioPrices(String userId, Long portfolioId) {
-        Portfolio portfolio = portfolioRepository.findById(portfolioId)
-                .filter(p -> p.getUserId().equals(userId))
-                .orElseThrow(() -> new UserNotOwnerOfPortfolioException("Portfolio not found or access denied"));
+        public RefreshResponseDTO refreshPortfolioPrices(Jwt jwt, Long portfolioId) {
+                String userId = jwt.getSubject();
+                Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                                .orElseThrow(() -> new UserNotOwnerOfPortfolioException("Portfolio not found or access denied"));
+
+                boolean isOwner = portfolio.getUserId().equals(userId);
+                boolean isAdmin = hasAnyRole(jwt, "ADMIN");
+                if (!isOwner && !isAdmin) {
+                        throw new UserNotOwnerOfPortfolioException("Portfolio not found or access denied");
+                }
 
         List<String> symbols = portfolio.getHoldings().stream()
                 .map(h -> h.getStock().getSymbol())
@@ -141,10 +162,16 @@ public class PortfolioService {
     }
 
     @Transactional(readOnly = true)
-    public PortfolioValuationDTO calculateValuation(String userId, Long portfolioId) {
-        Portfolio portfolio = portfolioRepository.findById(portfolioId)
-                .filter(p -> p.getUserId().equals(userId))
-                .orElseThrow(() -> new UserNotOwnerOfPortfolioException("Portfolio not found or access denied"));
+        public PortfolioValuationDTO calculateValuation(Jwt jwt, Long portfolioId) {
+                String userId = jwt.getSubject();
+                Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                                .orElseThrow(() -> new UserNotOwnerOfPortfolioException("Portfolio not found or access denied"));
+
+                boolean isOwner = portfolio.getUserId().equals(userId);
+                boolean isAdmin = hasAnyRole(jwt, "ADMIN");
+                if (!isOwner && !isAdmin) {
+                        throw new UserNotOwnerOfPortfolioException("Portfolio not found or access denied");
+                }
 
         Map<String, List<PortfolioHolding>> holdingsBySymbol = portfolio.getHoldings().stream()
                 .collect(Collectors.groupingBy(h -> h.getStock().getSymbol()));

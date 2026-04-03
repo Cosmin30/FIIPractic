@@ -1,0 +1,2 @@
+VHOST: /
+QUEUE: stock.price.refresh.dlq

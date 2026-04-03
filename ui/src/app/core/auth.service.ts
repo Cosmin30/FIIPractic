@@ -33,7 +33,17 @@ export class AuthService {
   readonly roles = computed(() => this._user()?.roles ?? []);
 
   isAuthenticated(): boolean {
-    return !!this.getAccessToken();
+    const token = this.getAccessToken();
+    if (!token) {
+      return false;
+    }
+
+    if (this.isTokenExpired(token)) {
+      this.clearSession();
+      return false;
+    }
+
+    return true;
   }
 
   login(username: string, password: string): Observable<UserInfo> {
@@ -90,6 +100,34 @@ export class AuthService {
     localStorage.removeItem(this.accessTokenKey);
     localStorage.removeItem(this.refreshTokenKey);
     this._user.set(null);
+  }
+
+  private isTokenExpired(token: string): boolean {
+    const payload = this.decodeTokenPayload(token);
+    if (!payload || typeof payload.exp !== 'number') {
+      return false;
+    }
+
+    const nowEpochSeconds = Math.floor(Date.now() / 1000);
+    return payload.exp <= nowEpochSeconds + 5;
+  }
+
+  private decodeTokenPayload(token: string): { exp?: number } | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) {
+        return null;
+      }
+
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const paddingLength = (4 - (base64.length % 4)) % 4;
+      const padded = base64 + '='.repeat(paddingLength);
+
+      return JSON.parse(atob(padded)) as { exp?: number };
+    } catch {
+      return null;
+    }
   }
 
   private requestToken(username: string, password: string): Observable<TokenResponse> {

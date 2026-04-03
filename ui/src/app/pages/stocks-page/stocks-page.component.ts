@@ -1,4 +1,5 @@
 ﻿import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -36,6 +37,7 @@ export class StocksPageComponent implements OnInit {
 
   readonly stocks = signal<Stock[]>([]);
   readonly loading = signal(false);
+  readonly deletingStockIds = signal<Set<number>>(new Set());
   readonly totalStocks = computed(() => this.stocks().length);
   readonly pricedStocks = computed(() => this.stocks().filter((stock) => stock.currentPrice !== null).length);
   readonly averagePrice = computed(() => {
@@ -120,13 +122,74 @@ export class StocksPageComponent implements OnInit {
   }
 
   deleteStock(id: number): void {
+    if (this.isDeleting(id)) {
+      return;
+    }
+
+    this.setDeleting(id, true);
     this.api.deleteStock(id).subscribe({
       next: () => {
         this.message.success(`Simbolul #${id} a fost sters.`);
         this.loadStocks();
       },
-      error: () => this.message.error('Stergerea simbolului a esuat.')
+      error: (error: unknown) => this.message.error(this.resolveDeleteError(error)),
+      complete: () => this.setDeleting(id, false)
     });
+  }
+
+  isDeleting(id: number): boolean {
+    return this.deletingStockIds().has(id);
+  }
+
+  private setDeleting(id: number, deleting: boolean): void {
+    this.deletingStockIds.update((current) => {
+      const next = new Set(current);
+
+      if (deleting) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+
+      return next;
+    });
+  }
+
+  private resolveDeleteError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const serverMessage = this.extractErrorMessage(error);
+
+      if (error.status === 409) {
+        return serverMessage ?? 'Simbolul este folosit in portofolii si nu poate fi sters. Sterge intai pozitiile care il folosesc.';
+      }
+
+      if (error.status === 404) {
+        return 'Simbolul nu mai exista.';
+      }
+
+      return serverMessage ?? 'Stergerea simbolului a esuat.';
+    }
+
+    return 'Stergerea simbolului a esuat.';
+  }
+
+  private extractErrorMessage(error: HttpErrorResponse): string | null {
+    const payload = error.error;
+
+    if (typeof payload === 'string') {
+      const trimmed = payload.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+
+    if (payload && typeof payload === 'object') {
+      const message = (payload as { message?: unknown }).message;
+      if (typeof message === 'string') {
+        const trimmed = message.trim();
+        return trimmed.length > 0 ? trimmed : null;
+      }
+    }
+
+    return null;
   }
 
   formatPrice(price: number | null): string {

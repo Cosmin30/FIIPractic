@@ -10,6 +10,7 @@ export interface Stock {
   symbol: string;
   currentPrice: number | null;
   lastPriceUpdate: string | null;
+  inUse?: boolean;
 }
 
 export interface Holding {

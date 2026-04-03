@@ -55,6 +55,10 @@ export class ApiService {
     return this.http.post<Portfolio>(`/api/portfolios/${portfolioId}/stocks`, payload);
   }
 
+  sellHolding(portfolioId: number, holdingId: number): Observable<Portfolio> {
+    return this.http.delete<Portfolio>(`/api/portfolios/${portfolioId}/holdings/${holdingId}`);
+  }
+
   deletePortfolio(portfolioId: number): Observable<void> {
     return this.http.delete<void>(`/api/portfolios/${portfolioId}`);
   }

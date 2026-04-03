@@ -135,6 +135,7 @@
                   <th>Cantitate</th>
                   <th>Pret achizitie</th>
                   <th>Achizitionat la</th>
+                  <th>Actiuni</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,6 +149,20 @@
                     <td>{{ holding.quantity }}</td>
                     <td>{{ formatMoney(holding.purchasePrice) }}</td>
                     <td>{{ holding.purchasedAt | date: 'short' }}</td>
+                    <td>
+                      <button
+                        nz-button
+                        nzSize="small"
+                        nzType="default"
+                        [nzLoading]="isSellingHolding(portfolio.id, holding.id)"
+                        [disabled]="isSellingHolding(portfolio.id, holding.id)"
+                        nz-popconfirm
+                        nzPopconfirmTitle="Pornesti vanzarea (completa sau partiala)?"
+                        (nzOnConfirm)="sellHoldingWithQuantity(portfolio.id, holding)"
+                      >
+                        Vinde / Retrage
+                      </button>
+                    </td>
                   </tr>
                 }
               </tbody>

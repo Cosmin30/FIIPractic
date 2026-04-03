@@ -8,6 +8,7 @@ import com.fiipractic.stocks.model.Stock;
 import com.fiipractic.stocks.repository.PortfolioHoldingRepository;
 import com.fiipractic.stocks.repository.StockRepository;
 
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -97,13 +98,24 @@ public class StockService {
     }
 
     @Transactional
-    public void deleteStock(Long id) {
+    public void deleteStock(Long id, Jwt jwt) {
         if (!stockRepository.existsById(id)) {
             throw new StockNotFoundException("Stock not found with id: " + id);
         }
 
-        if (portfolioHoldingRepository.existsByStockId(id)) {
-            throw new StockInUseException("Symbolul este folosit in portofolii si nu poate fi sters.");
+        String userId = jwt.getSubject();
+
+        portfolioHoldingRepository.deleteByStockIdAndPortfolioDeletedTrue(id);
+        portfolioHoldingRepository.deleteByStockIdAndPortfolioUserIdAndPortfolioDeletedFalse(id, userId);
+
+        long remainingActiveUsages = portfolioHoldingRepository.countByStockIdAndPortfolioDeletedFalse(id);
+        if (remainingActiveUsages > 0) {
+            portfolioHoldingRepository.deleteByStockIdAndPortfolioDeletedFalse(id);
+            remainingActiveUsages = portfolioHoldingRepository.countByStockIdAndPortfolioDeletedFalse(id);
+        }
+
+        if (remainingActiveUsages > 0) {
+            throw new StockInUseException("Simbolul este folosit in alte portofolii active si nu poate fi sters.");
         }
 
         stockRepository.deleteById(id);

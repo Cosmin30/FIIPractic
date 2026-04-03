@@ -50,24 +50,19 @@ public class StockController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteStock(@PathVariable Long id) {
-        stockService.deleteStock(id);
+    public ResponseEntity<Void> deleteStock(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long id) {
+        stockService.deleteStock(id, jwt);
         return ResponseEntity.noContent().build();
     }
     @PostMapping("/{symbol}/refresh")
-    public ResponseEntity<PriceRefreshResponseDTO> refreshPrice(
+    public ResponseEntity<StockDTO> refreshPrice(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String symbol) {
 
-        log.info("[API] Queue refresh for symbol [{}] by user [{}]", symbol, jwt.getSubject());
-        priceRefreshPublisher.publishRefresh(symbol, jwt.getSubject());
-
-        return ResponseEntity.accepted()
-                .body(new PriceRefreshResponseDTO(
-                        "QUEUED",
-                        symbol.toUpperCase(),
-                        "Price refresh request queued"
-                ));
+        log.info("[API] Direct refresh for symbol [{}] by user [{}]", symbol, jwt.getSubject());
+        return ResponseEntity.ok(stockService.refreshPrice(symbol));
     }
     @PostMapping("/refresh")
     public ResponseEntity<PriceRefreshResponseDTO> refreshAllPrices(

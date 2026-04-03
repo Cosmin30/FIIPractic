@@ -69,6 +69,8 @@
                 nz-button
                 nzDanger
                 nzSize="small"
+                [nzLoading]="isDeleting(stock.id)"
+                [disabled]="isDeleting(stock.id)"
                 nz-popconfirm
                 nzPopconfirmTitle="Stergi acest simbol?"
                 (nzOnConfirm)="deleteStock(stock.id)"

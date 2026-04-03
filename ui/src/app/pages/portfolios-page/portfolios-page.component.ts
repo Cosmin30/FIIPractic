@@ -10,8 +10,9 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule } from 'ng-zorro-antd/table';
+import { finalize, switchMap } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { Portfolio } from '../../core/models';
+import { Holding, Portfolio } from '../../core/models';
 
 @Component({
   selector: 'app-portfolios-page',
@@ -56,6 +57,7 @@ export class PortfoliosPageComponent implements OnInit {
   });
 
   readonly buyForms: Record<number, FormGroup> = {};
+  readonly sellingHoldingKeys = signal<Set<string>>(new Set());
 
   ngOnInit(): void {
     this.loadPortfolios();
@@ -130,6 +132,28 @@ export class PortfoliosPageComponent implements OnInit {
     });
   }
 
+  sellHoldingWithQuantity(portfolioId: number, holding: Holding): void {
+    if (this.isSellingHolding(portfolioId, holding.id)) {
+      return;
+    }
+
+    const sellQuantity = this.promptSellQuantity(holding.quantity);
+    if (sellQuantity === null) {
+      return;
+    }
+
+    if (sellQuantity === holding.quantity) {
+      this.sellHoldingCompletely(portfolioId, holding);
+      return;
+    }
+
+    this.sellHoldingPartially(portfolioId, holding, sellQuantity);
+  }
+
+  isSellingHolding(portfolioId: number, holdingId: number): boolean {
+    return this.sellingHoldingKeys().has(this.getHoldingKey(portfolioId, holdingId));
+  }
+
   showValuation: Record<number, boolean> = {};
   valuationData: Record<number, any> = {};
 
@@ -153,6 +177,101 @@ export class PortfoliosPageComponent implements OnInit {
       quantity: [1, [Validators.required, Validators.min(1)]],
       purchasePrice: [1, [Validators.required, Validators.min(0.01)]]
     });
+  }
+
+  private sellHoldingCompletely(portfolioId: number, holding: Holding): void {
+    this.setHoldingSelling(portfolioId, holding.id, true);
+
+    this.api
+      .sellHolding(portfolioId, holding.id)
+      .pipe(finalize(() => this.setHoldingSelling(portfolioId, holding.id, false)))
+      .subscribe({
+        next: () => {
+          this.message.success(`Ai vandut complet ${holding.quantity} actiuni ${holding.symbol}.`);
+          this.clearValuationCache(portfolioId);
+          this.loadPortfolios();
+        },
+        error: () => this.message.error('Vanzarea pozitiei a esuat.')
+      });
+  }
+
+  private sellHoldingPartially(portfolioId: number, holding: Holding, sellQuantity: number): void {
+    const remainingQuantity = holding.quantity - sellQuantity;
+
+    this.setHoldingSelling(portfolioId, holding.id, true);
+
+    this.api
+      .sellHolding(portfolioId, holding.id)
+      .pipe(
+        switchMap(() =>
+          this.api.buyStock(portfolioId, {
+            symbol: holding.symbol,
+            quantity: remainingQuantity,
+            purchasePrice: holding.purchasePrice
+          })
+        ),
+        finalize(() => this.setHoldingSelling(portfolioId, holding.id, false))
+      )
+      .subscribe({
+        next: () => {
+          this.message.success(
+            `Ai vandut ${sellQuantity} actiuni ${holding.symbol}. Au ramas ${remainingQuantity} actiuni.`
+          );
+          this.clearValuationCache(portfolioId);
+          this.loadPortfolios();
+        },
+        error: () => {
+          this.message.error('Vanzarea partiala a esuat. Reincarca portofoliul si incearca din nou.');
+          this.loadPortfolios();
+        }
+      });
+  }
+
+  private promptSellQuantity(maxQuantity: number): number | null {
+    const input = window.prompt(
+      `Introdu cantitatea de vandut (intre 1 si ${maxQuantity}).`,
+      String(maxQuantity)
+    );
+
+    if (input === null) {
+      return null;
+    }
+
+    const normalized = input.trim();
+    if (!/^\d+$/.test(normalized)) {
+      this.message.error('Cantitatea trebuie sa fie un numar intreg.');
+      return null;
+    }
+
+    const quantity = Number(normalized);
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxQuantity) {
+      this.message.error(`Cantitatea trebuie sa fie intre 1 si ${maxQuantity}.`);
+      return null;
+    }
+
+    return quantity;
+  }
+
+  private clearValuationCache(portfolioId: number): void {
+    this.showValuation[portfolioId] = false;
+    delete this.valuationData[portfolioId];
+  }
+
+  private setHoldingSelling(portfolioId: number, holdingId: number, selling: boolean): void {
+    const key = this.getHoldingKey(portfolioId, holdingId);
+    this.sellingHoldingKeys.update((current) => {
+      const next = new Set(current);
+      if (selling) {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+  }
+
+  private getHoldingKey(portfolioId: number, holdingId: number): string {
+    return `${portfolioId}:${holdingId}`;
   }
 
   formatMoney(value: number): string {
