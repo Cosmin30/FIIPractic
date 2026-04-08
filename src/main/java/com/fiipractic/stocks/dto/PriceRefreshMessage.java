@@ -4,5 +4,7 @@ import java.time.LocalDateTime;
 public record PriceRefreshMessage(
         String symbol,
         LocalDateTime requestedAt,
-        String requestedBy    // Keycloak userId
+        String requestedBy,   // Keycloak userId
+        String correlationId
+
 ) {}

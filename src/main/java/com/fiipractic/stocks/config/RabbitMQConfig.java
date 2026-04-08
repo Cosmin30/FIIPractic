@@ -28,7 +28,7 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public DirectExchange priceExchange() {
+    public DirectExchange priceRefreshExchange() {
         return new DirectExchange(PRICE_EXCHANGE);
     }
 
@@ -36,7 +36,7 @@ public class RabbitMQConfig {
     public Binding priceBinding() {
         return BindingBuilder
                 .bind(priceRefreshQueue())
-                .to(priceExchange())
+                .to(priceRefreshExchange())
                 .with(ROUTING_KEY);
     }
     @Bean

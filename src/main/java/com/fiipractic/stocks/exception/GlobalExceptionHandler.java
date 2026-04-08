@@ -78,11 +78,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UserNotOwnerOfPortfolioException.class)
     public ResponseEntity<ErrorResponse> handleUserNotOwnerOfPortfolioException(UserNotOwnerOfPortfolioException ex) {
         ErrorResponse error = new ErrorResponse(
-                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
                 LocalDateTime.now()
         );
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(PortfolioLimitException.class)
