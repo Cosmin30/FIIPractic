@@ -41,7 +41,7 @@ public class PortfolioController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Long portfolioId,
             @Valid @RequestBody BuyStockRequest request) {
-        return ResponseEntity.ok(portfolioService.buyStock(jwt.getSubject(), portfolioId, request));
+        return ResponseEntity.ok(portfolioService.buyStock(jwt, portfolioId, request));
     }
 
     @DeleteMapping("/{portfolioId}/holdings/{holdingId}")
@@ -50,7 +50,16 @@ public class PortfolioController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Long portfolioId,
             @PathVariable Long holdingId) {
-        return ResponseEntity.ok(portfolioService.sellHolding(jwt.getSubject(), portfolioId, holdingId));
+        return ResponseEntity.ok(portfolioService.sellHolding(jwt, portfolioId, holdingId));
+    }
+
+    @DeleteMapping("/{portfolioId}/holdings")
+    @PreAuthorize("hasAnyRole('USER', 'PREMIUM', 'ADMIN')")
+    public ResponseEntity<PortfolioDTO> sellHoldings(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long portfolioId,
+            @Valid @RequestBody SellHoldingsRequest request) {
+        return ResponseEntity.ok(portfolioService.sellHoldings(jwt, portfolioId, request.getHoldingIds()));
     }
 
     @GetMapping("/all")

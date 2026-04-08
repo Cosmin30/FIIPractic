@@ -4,7 +4,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8082/realms/stock-realm
+          issuer-uri: http://localhost:8082/realms/stock
   application:
     name: stocks
 
@@ -25,6 +25,7 @@ spring:
       ddl-auto: update
     show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
 
   rabbitmq:
     host: localhost
@@ -32,9 +33,15 @@ spring:
     username: admin
     password: admin
 
+
 server:
   port: 8081
 
 alphavantage:
   api-key: N8CDVE8OZZX845GQ
   base-url: https://www.alphavantage.co/query
+
+logbull:
+  host: http://localhost:4005
+  project-id: 7f03f40b-3f80-4c33-a5e4-d13af6aafee3
+  api-key: lb_80e3f7da3e0cdaca222957e0c536376f

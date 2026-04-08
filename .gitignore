@@ -34,5 +34,6 @@ build/
 
 # customs
 postgres_data
+rabbitmq_data
 .mvn
 .gitattributes

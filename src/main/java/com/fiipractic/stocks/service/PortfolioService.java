@@ -1,4 +1,5 @@
 package com.fiipractic.stocks.service;
+
 import com.fiipractic.stocks.exception.PortfolioLimitException;
 import com.fiipractic.stocks.exception.UnauthorizedException;
 import com.fiipractic.stocks.dto.BuyStockRequest;
@@ -13,22 +14,16 @@ import com.fiipractic.stocks.model.Portfolio;
 import com.fiipractic.stocks.model.PortfolioHolding;
 import com.fiipractic.stocks.model.Stock;
 import com.fiipractic.stocks.exception.UserNotOwnerOfPortfolioException;
-import com.fiipractic.stocks.repository.PortfolioHoldingRepository;
 import com.fiipractic.stocks.repository.PortfolioRepository;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,16 +32,16 @@ public class PortfolioService {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     private final PortfolioRepository portfolioRepository;
-    private final PortfolioHoldingRepository holdingRepository;
+    private final HoldingService holdingService;
     private final StockService stockService;
     private final PriceRefreshPublisher priceRefreshPublisher;
 
     public PortfolioService(PortfolioRepository portfolioRepository,
-                           PortfolioHoldingRepository holdingRepository,
-                           StockService stockService,
-                           PriceRefreshPublisher priceRefreshPublisher) {
+                            HoldingService holdingService,
+                            StockService stockService,
+                            PriceRefreshPublisher priceRefreshPublisher) {
         this.portfolioRepository = portfolioRepository;
-        this.holdingRepository = holdingRepository;
+        this.holdingService = holdingService;
         this.stockService = stockService;
         this.priceRefreshPublisher = priceRefreshPublisher;
     }
@@ -84,11 +79,10 @@ public class PortfolioService {
         return portfolios
                 .stream().map(this::toDTO).collect(Collectors.toList());
     }
+
     @Transactional
-    public PortfolioDTO buyStock(String userId, Long portfolioId, BuyStockRequest request) {
-        Portfolio portfolio = portfolioRepository.findByIdAndDeletedFalse(portfolioId)
-                .filter(p -> p.getUserId().equals(userId))
-                .orElseThrow(() -> new UnauthorizedException("Portfolio not found or access denied"));
+    public PortfolioDTO buyStock(Jwt jwt, Long portfolioId, BuyStockRequest request) {
+        Portfolio portfolio = getOwnedPortfolio(jwt.getSubject(), portfolioId);
 
         Stock stock = stockService.findOrCreate(request.getSymbol());
 
@@ -99,25 +93,35 @@ public class PortfolioService {
                 .purchasePrice(request.getPurchasePrice())
                 .build();
 
-        holdingRepository.save(holding);
+        holdingService.saveHolding(holding);
         portfolio.getHoldings().add(holding);
         return toDTO(portfolio);
     }
 
-        @Transactional
-        public PortfolioDTO sellHolding(String userId, Long portfolioId, Long holdingId) {
-                Portfolio portfolio = portfolioRepository.findByIdAndDeletedFalse(portfolioId)
-                                .filter(p -> p.getUserId().equals(userId))
-                                .orElseThrow(() -> new UnauthorizedException("Portfolio not found or access denied"));
+    @Transactional
+    public PortfolioDTO sellHolding(Jwt jwt, Long portfolioId, Long holdingId) {
+        String userId = jwt.getSubject();
+        getOwnedPortfolio(userId, portfolioId);
 
-                PortfolioHolding holding = holdingRepository.findByIdAndPortfolioId(holdingId, portfolioId)
-                                .orElseThrow(() -> new PortfolioNotFoundException("Holding not found in portfolio: " + holdingId));
+        holdingService.deleteHoldingFromPortfolio(holdingId, portfolioId);
 
-                holdingRepository.delete(holding);
-                portfolio.getHoldings().removeIf(existing -> existing.getId().equals(holdingId));
+        Portfolio refreshedPortfolio = getOwnedPortfolio(userId, portfolioId);
+        return toDTO(refreshedPortfolio);
+    }
 
-                return toDTO(portfolio);
+    @Transactional
+    public PortfolioDTO sellHoldings(Jwt jwt, Long portfolioId, List<Long> holdingIds) {
+        String userId = jwt.getSubject();
+        getOwnedPortfolio(userId, portfolioId);
+
+        long deletedCount = holdingService.deleteHoldingsFromPortfolio(holdingIds, portfolioId);
+        if (deletedCount == 0) {
+            throw new PortfolioNotFoundException("Holdings not found in portfolio: " + portfolioId);
         }
+
+        Portfolio refreshedPortfolio = getOwnedPortfolio(userId, portfolioId);
+        return toDTO(refreshedPortfolio);
+    }
 
     @Transactional
     public void deletePortfolio(Jwt jwt, Long portfolioId) {
@@ -135,24 +139,19 @@ public class PortfolioService {
         portfolio.setDeletedAt(LocalDateTime.now());
     }
 
-        public RefreshResponseDTO refreshPortfolioPrices(Jwt jwt, Long portfolioId) {
-                String userId = jwt.getSubject();
-                Portfolio portfolio = portfolioRepository.findById(portfolioId)
-                                .orElseThrow(() -> new UserNotOwnerOfPortfolioException("Portfolio not found or access denied"));
-
-                boolean isOwner = portfolio.getUserId().equals(userId);
-                boolean isAdmin = hasAnyRole(jwt, "ADMIN");
-                if (!isOwner && !isAdmin) {
-                        throw new UserNotOwnerOfPortfolioException("Portfolio not found or access denied");
-                }
+    @Transactional
+    public RefreshResponseDTO refreshPortfolioPrices(Jwt jwt, Long portfolioId) {
+        String userId = jwt.getSubject();
+        Portfolio portfolio = getAccessiblePortfolio(jwt, portfolioId);
 
         List<String> symbols = portfolio.getHoldings().stream()
                 .map(h -> h.getStock().getSymbol())
                 .distinct()
                 .toList();
 
-        symbols.forEach(symbol -> priceRefreshPublisher.publishRefresh(symbol, userId));
-
+        symbols.forEach(symbol ->
+                priceRefreshPublisher.publishRefresh(symbol, userId, UUID.randomUUID().toString())
+        );
         return new RefreshResponseDTO(
                 portfolioId.toString(),
                 symbols,
@@ -162,16 +161,8 @@ public class PortfolioService {
     }
 
     @Transactional(readOnly = true)
-        public PortfolioValuationDTO calculateValuation(Jwt jwt, Long portfolioId) {
-                String userId = jwt.getSubject();
-                Portfolio portfolio = portfolioRepository.findById(portfolioId)
-                                .orElseThrow(() -> new UserNotOwnerOfPortfolioException("Portfolio not found or access denied"));
-
-                boolean isOwner = portfolio.getUserId().equals(userId);
-                boolean isAdmin = hasAnyRole(jwt, "ADMIN");
-                if (!isOwner && !isAdmin) {
-                        throw new UserNotOwnerOfPortfolioException("Portfolio not found or access denied");
-                }
+    public PortfolioValuationDTO calculateValuation(Jwt jwt, Long portfolioId) {
+        Portfolio portfolio = getAccessiblePortfolio(jwt, portfolioId);
 
         Map<String, List<PortfolioHolding>> holdingsBySymbol = portfolio.getHoldings().stream()
                 .collect(Collectors.groupingBy(h -> h.getStock().getSymbol()));
@@ -195,7 +186,7 @@ public class PortfolioService {
                             ? BigDecimal.ZERO
                             : totalCost.divide(quantityDecimal, 2, RoundingMode.HALF_UP);
 
-                    BigDecimal currentPrice = holdings.isEmpty() ? null : holdings.get(0).getStock().getCurrentPrice();
+                    BigDecimal currentPrice = holdings.isEmpty() ? null : holdings.getFirst().getStock().getCurrentPrice();
                     BigDecimal invested = avgPrice.multiply(quantityDecimal);
                     BigDecimal currentValue = currentPrice != null
                             ? currentPrice.multiply(quantityDecimal)
@@ -266,11 +257,11 @@ public class PortfolioService {
 
     private HoldingDTO toHoldingDTO(PortfolioHolding h) {
         return new HoldingDTO(
-            h.getId(),
-            h.getStock().getSymbol(),
-            h.getQuantity(),
-            h.getPurchasePrice(),
-            h.getPurchasedAt()
+                h.getId(),
+                h.getStock().getSymbol(),
+                h.getQuantity(),
+                h.getPurchasePrice(),
+                h.getPurchasedAt()
         );
     }
 
@@ -282,6 +273,26 @@ public class PortfolioService {
             }
         }
         return false;
+    }
+
+    private Portfolio getOwnedPortfolio(String userId, Long portfolioId) {
+        return portfolioRepository.findByIdAndDeletedFalse(portfolioId)
+                .filter(p -> p.getUserId().equals(userId))
+                .orElseThrow(() -> new UnauthorizedException("Portfolio not found or access denied"));
+    }
+
+    private Portfolio getAccessiblePortfolio(Jwt jwt, Long portfolioId) {
+        Portfolio portfolio = portfolioRepository.findByIdAndDeletedFalse(portfolioId)
+                .orElseThrow(() -> new UserNotOwnerOfPortfolioException("Portfolio not found or access denied"));
+
+        String userId = jwt.getSubject();
+        if (portfolio.getUserId().equals(userId)) {
+            return portfolio;
+        }
+        if (hasAnyRole(jwt, "ADMIN")) {
+            return portfolio;
+        }
+        throw new UserNotOwnerOfPortfolioException("Portfolio not found or access denied");
     }
 
     private Set<String> extractRoles(Jwt jwt) {
