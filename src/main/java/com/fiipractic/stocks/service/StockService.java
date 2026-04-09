@@ -8,13 +8,17 @@ import com.fiipractic.stocks.model.Stock;
 import com.fiipractic.stocks.repository.PortfolioHoldingRepository;
 import com.fiipractic.stocks.repository.StockRepository;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -76,6 +80,56 @@ public class StockService {
         return toDTO(stock);
     }
 
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getStaleStocks(int minutes) {
+        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(Math.max(minutes, 1));
+        return stockRepository.findStalePriceStocks(staleBefore)
+                .stream()
+                .map(row -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("stockId", asLong(row[0]));
+                    result.put("symbol", asString(row[1]));
+                    result.put("currentPrice", asBigDecimal(row[2]));
+                    result.put("lastPriceUpdate", asDateTime(row[3]));
+                    return result;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getMostHeldStocks(int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 50);
+        return stockRepository.findMostHeldStocks(PageRequest.of(0, safeLimit))
+                .stream()
+                .map(row -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("symbol", asString(row[0]));
+                    result.put("holdingCount", asLong(row[1]));
+                    result.put("portfolioCount", asLong(row[2]));
+                    result.put("totalQuantity", asLong(row[3]));
+                    result.put("currentPrice", asBigDecimal(row[4]));
+                    return result;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getWatchlistCandidates(String userId, int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 50);
+        return stockRepository.findWatchlistCandidatesForUser(userId, PageRequest.of(0, safeLimit))
+                .stream()
+                .map(row -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("symbol", asString(row[0]));
+                    result.put("buys", asLong(row[1]));
+                    result.put("totalQuantity", asLong(row[2]));
+                    result.put("lastBuyAt", asDateTime(row[3]));
+                    result.put("currentPrice", asBigDecimal(row[4]));
+                    return result;
+                })
+                .toList();
+    }
+
     @Transactional
     public StockDTO updateStock(Long id, String symbol) {
         String normalized = normalize(symbol);
@@ -134,5 +188,33 @@ public class StockService {
     private StockDTO toDTO(Stock s) {
     return new StockDTO(s.getId(), s.getSymbol(), s.getCurrentPrice(), s.getLastPriceUpdate());
 
+    }
+
+    private long asLong(Object value) {
+        return value instanceof Number number ? number.longValue() : 0L;
+    }
+
+    private BigDecimal asBigDecimal(Object value) {
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        if (value instanceof Number number) {
+            return BigDecimal.valueOf(number.doubleValue());
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private String asString(Object value) {
+        return value == null ? "" : value.toString();
+    }
+
+    private LocalDateTime asDateTime(Object value) {
+        if (value instanceof LocalDateTime dateTime) {
+            return dateTime;
+        }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toLocalDateTime();
+        }
+        return null;
     }
 }

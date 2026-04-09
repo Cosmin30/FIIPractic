@@ -14,11 +14,13 @@ import com.fiipractic.stocks.model.Portfolio;
 import com.fiipractic.stocks.model.PortfolioHolding;
 import com.fiipractic.stocks.model.Stock;
 import com.fiipractic.stocks.exception.UserNotOwnerOfPortfolioException;
+import com.fiipractic.stocks.repository.PortfolioHoldingRepository;
 import com.fiipractic.stocks.repository.PortfolioRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
@@ -36,15 +40,18 @@ public class PortfolioService {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     private final PortfolioRepository portfolioRepository;
+    private final PortfolioHoldingRepository portfolioHoldingRepository;
     private final HoldingService holdingService;
     private final StockService stockService;
     private final PriceRefreshPublisher priceRefreshPublisher;
 
     public PortfolioService(PortfolioRepository portfolioRepository,
+                            PortfolioHoldingRepository portfolioHoldingRepository,
                             HoldingService holdingService,
                             StockService stockService,
                             PriceRefreshPublisher priceRefreshPublisher) {
         this.portfolioRepository = portfolioRepository;
+        this.portfolioHoldingRepository = portfolioHoldingRepository;
         this.holdingService = holdingService;
         this.stockService = stockService;
         this.priceRefreshPublisher = priceRefreshPublisher;
@@ -247,6 +254,118 @@ public class PortfolioService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> getUserPortfolioOverview(String userId) {
+        Optional<Object[]> row = portfolioRepository.findUserPortfolioOverview(userId);
+        if (row.isEmpty()) {
+            Map<String, Object> emptyResult = new LinkedHashMap<>();
+            emptyResult.put("userId", userId);
+            emptyResult.put("portfolioCount", 0L);
+            emptyResult.put("holdingCount", 0L);
+            emptyResult.put("invested", BigDecimal.ZERO);
+            emptyResult.put("currentValue", BigDecimal.ZERO);
+            return emptyResult;
+        }
+
+        Object[] values = row.get();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("userId", asString(values[0]));
+        result.put("portfolioCount", asLong(values[1]));
+        result.put("holdingCount", asLong(values[2]));
+        result.put("invested", asBigDecimal(values[3]));
+        result.put("currentValue", asBigDecimal(values[4]));
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getUserSymbolExposure(String userId) {
+        return portfolioHoldingRepository.findUserSymbolExposure(userId)
+                .stream()
+                .map(row -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("symbol", asString(row[0]));
+                    result.put("totalQuantity", asLong(row[1]));
+                    result.put("invested", asBigDecimal(row[2]));
+                    result.put("currentValue", asBigDecimal(row[3]));
+                    result.put("profitLoss", asBigDecimal(row[4]));
+                    result.put("profitLossPercent", asBigDecimal(row[5]));
+                    return result;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getTopMoversForUser(String userId, int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 50);
+        return portfolioHoldingRepository.findTopMoversForUser(userId, PageRequest.of(0, safeLimit))
+                .stream()
+                .map(row -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("symbol", asString(row[0]));
+                    result.put("totalQuantity", asLong(row[1]));
+                    result.put("averageBuyPrice", asBigDecimal(row[2]));
+                    result.put("currentPrice", asBigDecimal(row[3]));
+                    result.put("movePercent", asBigDecimal(row[4]));
+                    return result;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getBuyActivityTimeline(String userId, int days) {
+        int safeDays = Math.min(Math.max(days, 1), 365);
+        LocalDateTime fromDate = LocalDateTime.now().minusDays(safeDays);
+
+        return portfolioHoldingRepository.findBuyActivityTimeline(userId, fromDate)
+                .stream()
+                .map(row -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("day", asDateLabel(row[0]));
+                    result.put("trades", asLong(row[1]));
+                    result.put("totalQuantity", asLong(row[2]));
+                    result.put("invested", asBigDecimal(row[3]));
+                    return result;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getMostDiversifiedPortfolios(int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 50);
+        return portfolioRepository.findMostDiversifiedPortfolios(PageRequest.of(0, safeLimit))
+                .stream()
+                .map(row -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("portfolioId", asLong(row[0]));
+                    result.put("portfolioName", asString(row[1]));
+                    result.put("userId", asString(row[2]));
+                    result.put("positions", asLong(row[3]));
+                    result.put("uniqueSymbols", asLong(row[4]));
+                    result.put("marketValue", asBigDecimal(row[5]));
+                    return result;
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getRecentSoftDeletedPortfolios(int days) {
+        int safeDays = Math.min(Math.max(days, 1), 365);
+        LocalDateTime fromDate = LocalDateTime.now().minusDays(safeDays);
+
+        return portfolioRepository.findRecentSoftDeletedPortfolios(fromDate)
+                .stream()
+                .map(row -> {
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("portfolioId", asLong(row[0]));
+                    result.put("portfolioName", asString(row[1]));
+                    result.put("userId", asString(row[2]));
+                    result.put("deletedBy", asString(row[3]));
+                    result.put("deletedAt", asDateTime(row[4]));
+                    return result;
+                })
+                .toList();
+    }
+
     private BigDecimal calculateProfitLossPercent(BigDecimal profitLoss, BigDecimal invested) {
         if (invested.signum() == 0) {
             return BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
@@ -327,5 +446,40 @@ public class PortfolioService {
                 .map(String.class::cast)
                 .map(role -> role.toUpperCase(Locale.ROOT))
                 .collect(Collectors.toSet());
+    }
+
+    private long asLong(Object value) {
+        return value instanceof Number number ? number.longValue() : 0L;
+    }
+
+    private BigDecimal asBigDecimal(Object value) {
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        if (value instanceof Number number) {
+            return BigDecimal.valueOf(number.doubleValue());
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private String asString(Object value) {
+        return value == null ? "" : value.toString();
+    }
+
+    private LocalDateTime asDateTime(Object value) {
+        if (value instanceof LocalDateTime dateTime) {
+            return dateTime;
+        }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toLocalDateTime();
+        }
+        return null;
+    }
+
+    private String asDateLabel(Object value) {
+        if (value instanceof Date date) {
+            return date.toLocalDate().toString();
+        }
+        return asString(value);
     }
 }

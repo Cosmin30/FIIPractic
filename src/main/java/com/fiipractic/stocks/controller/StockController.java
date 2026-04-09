@@ -41,6 +41,25 @@ public class StockController {
         return ResponseEntity.ok(stockService.getAllStocks());
     }
 
+    @GetMapping("/insights/stale")
+    public ResponseEntity<List<Map<String, Object>>> getStaleStocks(
+            @RequestParam(defaultValue = "30") int minutes) {
+        return ResponseEntity.ok(stockService.getStaleStocks(minutes));
+    }
+
+    @GetMapping("/insights/most-held")
+    public ResponseEntity<List<Map<String, Object>>> getMostHeldStocks(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(stockService.getMostHeldStocks(limit));
+    }
+
+    @GetMapping("/insights/watchlist")
+    public ResponseEntity<List<Map<String, Object>>> getWatchlistCandidates(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(stockService.getWatchlistCandidates(jwt.getSubject(), limit));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<StockDTO> getStock(@PathVariable Long id) {
         return ResponseEntity.ok(stockService.getStockById(id));

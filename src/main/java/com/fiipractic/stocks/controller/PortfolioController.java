@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -113,6 +114,46 @@ public class PortfolioController {
         return ResponseEntity.ok(
             portfolioService.calculateValuation(jwt, portfolioId)
         );
+    }
+
+    @GetMapping("/insights/overview")
+    public ResponseEntity<Map<String, Object>> getOverview(
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(portfolioService.getUserPortfolioOverview(jwt.getSubject()));
+    }
+
+    @GetMapping("/insights/exposure")
+    public ResponseEntity<List<Map<String, Object>>> getExposure(
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(portfolioService.getUserSymbolExposure(jwt.getSubject()));
+    }
+
+    @GetMapping("/insights/top-movers")
+    public ResponseEntity<List<Map<String, Object>>> getTopMovers(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "5") int limit) {
+        return ResponseEntity.ok(portfolioService.getTopMoversForUser(jwt.getSubject(), limit));
+    }
+
+    @GetMapping("/insights/buy-timeline")
+    public ResponseEntity<List<Map<String, Object>>> getBuyTimeline(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "30") int days) {
+        return ResponseEntity.ok(portfolioService.getBuyActivityTimeline(jwt.getSubject(), days));
+    }
+
+    @GetMapping("/insights/diversified")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Map<String, Object>>> getMostDiversified(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(portfolioService.getMostDiversifiedPortfolios(limit));
+    }
+
+    @GetMapping("/insights/deleted")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Map<String, Object>>> getRecentlyDeleted(
+            @RequestParam(defaultValue = "30") int days) {
+        return ResponseEntity.ok(portfolioService.getRecentSoftDeletedPortfolios(days));
     }
 
 
