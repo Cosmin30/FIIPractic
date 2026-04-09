@@ -1,5 +1,8 @@
 package com.fiipractic.stocks.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +18,11 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(StockNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleStockNotFoundException(StockNotFoundException ex) {
+        logError("stock_not_found", "StockNotFoundException", HttpStatus.NOT_FOUND, ex.getMessage(), ex, false);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
@@ -27,6 +33,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(StockAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleStockAlreadyExistsException(StockAlreadyExistsException ex) {
+        logError("stock_already_exists", "StockAlreadyExistsException", HttpStatus.CONFLICT, ex.getMessage(), ex, false);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.CONFLICT.value(),
                 ex.getMessage(),
@@ -37,6 +44,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(StockInUseException.class)
     public ResponseEntity<ErrorResponse> handleStockInUseException(StockInUseException ex) {
+        logError("stock_in_use", "StockInUseException", HttpStatus.CONFLICT, ex.getMessage(), ex, false);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.CONFLICT.value(),
                 ex.getMessage(),
@@ -47,6 +55,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex) {
+        logError("user_not_found", "UserNotFoundException", HttpStatus.NOT_FOUND, ex.getMessage(), ex, false);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
@@ -57,6 +66,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PortfolioNotFoundException.class)
     public ResponseEntity<ErrorResponse> handlePortfolioNotFoundException(PortfolioNotFoundException ex) {
+        logError("portfolio_not_found", "PortfolioNotFoundException", HttpStatus.NOT_FOUND, ex.getMessage(), ex, false);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
@@ -67,6 +77,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex) {
+        logError("unauthorized", "UnauthorizedException", HttpStatus.FORBIDDEN, ex.getMessage(), ex, false);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.FORBIDDEN.value(),
                 ex.getMessage(),
@@ -77,6 +88,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotOwnerOfPortfolioException.class)
     public ResponseEntity<ErrorResponse> handleUserNotOwnerOfPortfolioException(UserNotOwnerOfPortfolioException ex) {
+        logError("portfolio_access_denied", "UserNotOwnerOfPortfolioException", HttpStatus.NOT_FOUND, ex.getMessage(), ex, false);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
@@ -87,6 +99,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PortfolioLimitException.class)
     public ResponseEntity<ErrorResponse> handlePortfolioLimitException(PortfolioLimitException ex) {
+        logError("portfolio_limit_reached", "PortfolioLimitException", HttpStatus.FORBIDDEN, ex.getMessage(), ex, false);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.FORBIDDEN.value(),
                 ex.getMessage(),
@@ -110,17 +123,53 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 errors
         );
+        logError("validation_failed", "MethodArgumentNotValidException", HttpStatus.BAD_REQUEST, "Validation failed", ex, false);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        logError("data_integrity_violation", "DataIntegrityViolationException", HttpStatus.CONFLICT,
+                "Operatia nu poate fi efectuata din cauza constrangerilor de date.", ex, false);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.CONFLICT.value(),
                 "Operatia nu poate fi efectuata din cauza constrangerilor de date.",
                 LocalDateTime.now()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception ex) {
+        logError("unexpected_error", ex.getClass().getSimpleName(), HttpStatus.INTERNAL_SERVER_ERROR,
+                ex.getMessage(), ex, true);
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Unexpected error",
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+    private void logError(String action,
+                          String errorType,
+                          HttpStatus status,
+                          String message,
+                          Exception ex,
+                          boolean includeStackTrace) {
+        try {
+            MDC.put("action", action);
+            MDC.put("errorType", errorType);
+            MDC.put("httpStatus", String.valueOf(status.value()));
+
+            if (includeStackTrace) {
+                log.error(message, ex);
+            } else {
+                log.error(message);
+            }
+        } finally {
+            MDC.clear();
+        }
     }
 
     // records for error and validation responses

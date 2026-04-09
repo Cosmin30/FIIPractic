@@ -1,5 +1,5 @@
 {
-  "realm": "stock",
+  "realm": "stock-realm",
   "enabled": true,
   "roles": {
     "realm": [
@@ -42,4 +42,3 @@
     }
   ]
 }
-

@@ -11,9 +11,16 @@ import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
+import java.util.UUID;
 @RestController
 @RequestMapping("/api/portfolios")
 public class PortfolioController {
+
+    private static final Logger log = LoggerFactory.getLogger(PortfolioController.class);
 
     private final PortfolioService portfolioService;
 
@@ -82,8 +89,21 @@ public class PortfolioController {
     public ResponseEntity<RefreshResponseDTO> refreshPortfolioPrices(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Long portfolioId) {
+        String userId = jwt.getSubject();
+        String correlationId = UUID.randomUUID().toString();
+
+        try {
+            MDC.put("action", "portfolio_refresh_requested");
+            MDC.put("portfolioId", String.valueOf(portfolioId));
+            MDC.put("userId", userId);
+            MDC.put("correlationId", correlationId);
+            log.info("Portfolio refresh requested for portfolio {}", portfolioId);
+        } finally {
+            MDC.clear();
+        }
+
         return ResponseEntity.ok(
-            portfolioService.refreshPortfolioPrices(jwt, portfolioId)
+            portfolioService.refreshPortfolioPrices(jwt, portfolioId, correlationId)
         );
     }
     @GetMapping("/{portfolioId}/valuation")

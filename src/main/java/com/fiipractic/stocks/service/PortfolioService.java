@@ -16,6 +16,9 @@ import com.fiipractic.stocks.model.Stock;
 import com.fiipractic.stocks.exception.UserNotOwnerOfPortfolioException;
 import com.fiipractic.stocks.repository.PortfolioRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class PortfolioService {
+    private static final Logger log = LoggerFactory.getLogger(PortfolioService.class);
     private static final long FREE_USER_PORTFOLIO_LIMIT = 3L;
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
@@ -61,7 +65,19 @@ public class PortfolioService {
                 .holdings(new ArrayList<>())
                 .build();
 
-        return toDTO(portfolioRepository.save(portfolio));
+        Portfolio savedPortfolio = portfolioRepository.save(portfolio);
+
+        try {
+            MDC.put("action", "portfolio_created");
+            MDC.put("userId", userId);
+            MDC.put("portfolioId", String.valueOf(savedPortfolio.getId()));
+            MDC.put("portfolioName", savedPortfolio.getName());
+            log.info("Portfolio created successfully");
+        } finally {
+            MDC.clear();
+        }
+
+        return toDTO(savedPortfolio);
     }
 
     @Transactional(readOnly = true)
@@ -140,7 +156,7 @@ public class PortfolioService {
     }
 
     @Transactional
-    public RefreshResponseDTO refreshPortfolioPrices(Jwt jwt, Long portfolioId) {
+    public RefreshResponseDTO refreshPortfolioPrices(Jwt jwt, Long portfolioId, String correlationId) {
         String userId = jwt.getSubject();
         Portfolio portfolio = getAccessiblePortfolio(jwt, portfolioId);
 
@@ -150,7 +166,7 @@ public class PortfolioService {
                 .toList();
 
         symbols.forEach(symbol ->
-                priceRefreshPublisher.publishRefresh(symbol, userId, UUID.randomUUID().toString())
+                priceRefreshPublisher.publishRefresh(symbol, userId, correlationId)
         );
         return new RefreshResponseDTO(
                 portfolioId.toString(),
