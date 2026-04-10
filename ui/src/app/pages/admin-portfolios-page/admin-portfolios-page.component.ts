@@ -8,9 +8,10 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { catchError, forkJoin, of } from 'rxjs';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { ApiService } from '../../core/api.service';
-import { Portfolio } from '../../core/models';
+import { AdminDeletedPortfolioInsight, AdminDiversifiedPortfolioInsight, Portfolio } from '../../core/models';
 
 import { FormsModule } from '@angular/forms';
 
@@ -39,6 +40,9 @@ export class AdminPortfoliosPageComponent implements OnInit {
 
   readonly portfolios = signal<Portfolio[]>([]);
   readonly loading = signal(false);
+  readonly insightsLoading = signal(false);
+  readonly diversifiedInsights = signal<AdminDiversifiedPortfolioInsight[]>([]);
+  readonly deletedInsights = signal<AdminDeletedPortfolioInsight[]>([]);
   readonly totalPortfolios = computed(() => this.portfolios().length);
   readonly deletedCount = computed(() => this.portfolios().filter((portfolio) => portfolio.deleted).length);
   readonly activeCount = computed(() => this.totalPortfolios() - this.deletedCount());
@@ -55,6 +59,7 @@ export class AdminPortfoliosPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.loadInsights();
   }
 
   load(): void {
@@ -63,6 +68,29 @@ export class AdminPortfoliosPageComponent implements OnInit {
       next: (data) => this.portfolios.set(data),
       error: () => this.message.error('Nu am putut incarca portofoliile administrative.'),
       complete: () => this.loading.set(false)
+    });
+  }
+
+  loadInsights(showSuccessMessage = false): void {
+    this.insightsLoading.set(true);
+
+    forkJoin({
+      diversified: this.api
+        .getMostDiversifiedPortfolios(8)
+        .pipe(catchError(() => of([] as AdminDiversifiedPortfolioInsight[]))),
+      deleted: this.api
+        .getRecentlyDeletedPortfolios(30)
+        .pipe(catchError(() => of([] as AdminDeletedPortfolioInsight[])))
+    }).subscribe({
+      next: ({ diversified, deleted }) => {
+        this.diversifiedInsights.set(diversified);
+        this.deletedInsights.set(deleted);
+
+        if (showSuccessMessage) {
+          this.message.success('Insight-urile administrative au fost actualizate.');
+        }
+      },
+      complete: () => this.insightsLoading.set(false)
     });
   }
 
@@ -77,6 +105,7 @@ export class AdminPortfoliosPageComponent implements OnInit {
         this.message.success('Portofoliul a fost creat.');
         this.createForm.reset();
         this.load();
+        this.loadInsights();
       },
       error: () => this.message.error('Crearea portofoliului a esuat.')
     });
@@ -87,6 +116,7 @@ export class AdminPortfoliosPageComponent implements OnInit {
       next: () => {
         this.message.success('Portofoliul a fost sters.');
         this.load();
+        this.loadInsights();
       },
       error: () => this.message.error('Stergerea portofoliului a esuat.')
     });

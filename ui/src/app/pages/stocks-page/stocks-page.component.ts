@@ -10,8 +10,9 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { catchError, forkJoin, of } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { Stock } from '../../core/models';
+import { Stock, StockMostHeldInsight, StockStaleInsight, StockWatchlistCandidate } from '../../core/models';
 
 @Component({
   selector: 'app-stocks-page',
@@ -37,7 +38,11 @@ export class StocksPageComponent implements OnInit {
 
   readonly stocks = signal<Stock[]>([]);
   readonly loading = signal(false);
+  readonly insightsLoading = signal(false);
   readonly deletingStockIds = signal<Set<number>>(new Set());
+  readonly staleStocks = signal<StockStaleInsight[]>([]);
+  readonly mostHeldStocks = signal<StockMostHeldInsight[]>([]);
+  readonly watchlistCandidates = signal<StockWatchlistCandidate[]>([]);
   readonly totalStocks = computed(() => this.stocks().length);
   readonly pricedStocks = computed(() => this.stocks().filter((stock) => stock.currentPrice !== null).length);
   readonly averagePrice = computed(() => {
@@ -58,6 +63,7 @@ export class StocksPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadStocks();
+    this.loadInsights();
   }
 
   loadStocks(): void {
@@ -66,6 +72,27 @@ export class StocksPageComponent implements OnInit {
       next: (data) => this.stocks.set(data),
       error: () => this.message.error('Nu am putut incarca simbolurile.'),
       complete: () => this.loading.set(false)
+    });
+  }
+
+  loadInsights(showSuccessMessage = false): void {
+    this.insightsLoading.set(true);
+
+    forkJoin({
+      stale: this.api.getStaleStocks(60).pipe(catchError(() => of([] as StockStaleInsight[]))),
+      mostHeld: this.api.getMostHeldStocks(8).pipe(catchError(() => of([] as StockMostHeldInsight[]))),
+      watchlist: this.api.getWatchlistCandidates(8).pipe(catchError(() => of([] as StockWatchlistCandidate[])))
+    }).subscribe({
+      next: ({ stale, mostHeld, watchlist }) => {
+        this.staleStocks.set(stale);
+        this.mostHeldStocks.set(mostHeld);
+        this.watchlistCandidates.set(watchlist);
+
+        if (showSuccessMessage) {
+          this.message.success('Insight-urile de piata au fost actualizate.');
+        }
+      },
+      complete: () => this.insightsLoading.set(false)
     });
   }
 
@@ -81,6 +108,7 @@ export class StocksPageComponent implements OnInit {
         this.message.success(`Simbolul ${symbol} a fost creat.`);
         this.createForm.reset();
         this.loadStocks();
+        this.loadInsights();
       },
       error: () => this.message.error('Crearea simbolului a esuat.')
     });
@@ -91,6 +119,7 @@ export class StocksPageComponent implements OnInit {
       next: () => {
         this.message.success(`Cotatia pentru ${symbol} a fost actualizata.`);
         this.loadStocks();
+        this.loadInsights();
       },
       error: () => this.message.error(`Nu am putut actualiza ${symbol}.`)
     });
@@ -101,6 +130,7 @@ export class StocksPageComponent implements OnInit {
       next: () => {
         this.message.success('Toate cotatiile au fost puse in coada pentru actualizare.');
         this.loadStocks();
+        this.loadInsights();
       },
       error: () => this.message.error('Nu am putut pune in coada toate cotatiile.')
     });
@@ -116,6 +146,7 @@ export class StocksPageComponent implements OnInit {
       next: () => {
         this.message.success(`Simbolul #${stock.id} a fost actualizat.`);
         this.loadStocks();
+        this.loadInsights();
       },
       error: () => this.message.error('Actualizarea simbolului a esuat.')
     });
@@ -131,6 +162,7 @@ export class StocksPageComponent implements OnInit {
       next: () => {
         this.message.success(`Simbolul #${id} a fost sters.`);
         this.loadStocks();
+        this.loadInsights();
       },
       error: (error: unknown) => this.message.error(this.resolveDeleteError(error)),
       complete: () => this.setDeleting(id, false)

@@ -5,7 +5,10 @@
       <h1>Supervizare portofolii</h1>
       <p>Verifica istoricul stergerilor, proprietarii si distributia pozitiilor intre utilizatori.</p>
     </div>
-    <button nz-button nzType="default" (click)="load()">Actualizeaza</button>
+    <div class="hero-actions">
+      <button nz-button nzType="default" (click)="load()">Actualizeaza portofolii</button>
+      <button nz-button nzType="default" (click)="loadInsights(true)">Actualizeaza insights</button>
+    </div>
   </section>
 
   <div class="stats-grid">
@@ -22,6 +25,62 @@
     <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Sterse</span>
       <strong>{{ deletedCount() }}</strong>
+    </nz-card>
+  </div>
+
+  <div class="insights-grid">
+    <nz-card nzTitle="Portofolii cele mai diversificate" [nzLoading]="insightsLoading()" class="insight-card">
+      @if (diversifiedInsights().length === 0) {
+        <p class="empty-state">Nu exista date de diversificare disponibile.</p>
+      } @else {
+        <nz-table #diversifiedTable [nzData]="diversifiedInsights()" [nzSize]="'small'" [nzFrontPagination]="false">
+          <thead>
+            <tr>
+              <th>Portofoliu</th>
+              <th>Utilizator</th>
+              <th>Simboluri</th>
+              <th>Valoare</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of diversifiedTable.data; track row.portfolioId) {
+              <tr>
+                <td>#{{ row.portfolioId }} - {{ row.portfolioName }}</td>
+                <td>{{ row.userId }}</td>
+                <td>{{ row.uniqueSymbols }}</td>
+                <td>{{ row.marketValue | number:'1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </nz-card>
+
+    <nz-card nzTitle="Portofolii sterse recent" [nzLoading]="insightsLoading()" class="insight-card">
+      @if (deletedInsights().length === 0) {
+        <p class="empty-state">Nu au fost detectate stergeri recente.</p>
+      } @else {
+        <nz-table #deletedTable [nzData]="deletedInsights()" [nzSize]="'small'" [nzFrontPagination]="false">
+          <thead>
+            <tr>
+              <th>Portofoliu</th>
+              <th>Utilizator</th>
+              <th>Sters de</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of deletedTable.data; track row.portfolioId) {
+              <tr>
+                <td>#{{ row.portfolioId }} - {{ row.portfolioName }}</td>
+                <td>{{ row.userId }}</td>
+                <td>{{ row.deletedBy }}</td>
+                <td>{{ row.deletedAt ? (row.deletedAt | date: 'short') : '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
     </nz-card>
   </div>
 

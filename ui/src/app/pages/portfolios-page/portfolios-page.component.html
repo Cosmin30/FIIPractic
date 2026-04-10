@@ -5,7 +5,10 @@
       <h1>Atelierul tau de capital</h1>
       <p>Construieste strategii, urmareste pozitiile si dezvolta fiecare portofoliu pas cu pas.</p>
     </div>
-    <button nz-button nzType="default" (click)="loadPortfolios()">Actualizeaza tabloul</button>
+    <div class="hero-actions">
+      <button nz-button nzType="default" (click)="loadPortfolios()">Actualizeaza tabloul</button>
+      <button nz-button nzType="default" (click)="loadInsights(true)">Actualizeaza insights</button>
+    </div>
   </section>
 
   <div class="stats-grid">
@@ -22,6 +25,106 @@
     <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Capital investit</span>
       <strong>{{ formatMoney(investedCapital()) }}</strong>
+    </nz-card>
+  </div>
+
+  <div class="insights-grid">
+    <nz-card nzTitle="Overview portofolii" [nzLoading]="insightsLoading()" class="insight-card">
+      @if (overview()) {
+        <div class="overview-grid">
+          <article>
+            <span>Portofolii</span>
+            <strong>{{ overview()!.portfolioCount }}</strong>
+          </article>
+          <article>
+            <span>Pozitii totale</span>
+            <strong>{{ overview()!.holdingCount }}</strong>
+          </article>
+          <article>
+            <span>Investit</span>
+            <strong>{{ formatMoney(overview()!.invested) }}</strong>
+          </article>
+          <article>
+            <span>Valoare curenta</span>
+            <strong>{{ formatMoney(overview()!.currentValue) }}</strong>
+          </article>
+        </div>
+      }
+    </nz-card>
+
+    <nz-card nzTitle="Top movers" [nzLoading]="insightsLoading()" class="insight-card">
+      @if (topMovers().length === 0) {
+        <p class="empty-state">Nu exista inca suficiente date pentru movers.</p>
+      } @else {
+        <nz-table #moversTable [nzData]="topMovers()" [nzSize]="'small'" [nzFrontPagination]="false">
+          <thead>
+            <tr>
+              <th>Simbol</th>
+              <th>Cantitate</th>
+              <th>Move %</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of moversTable.data; track row.symbol) {
+              <tr>
+                <td>{{ row.symbol }}</td>
+                <td>{{ row.totalQuantity }}</td>
+                <td>{{ row.movePercent | number:'1.2-2' }}%</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </nz-card>
+
+    <nz-card nzTitle="Expunere pe simboluri" [nzLoading]="insightsLoading()" class="insight-card">
+      @if (exposure().length === 0) {
+        <p class="empty-state">Nu exista expunere agregata momentan.</p>
+      } @else {
+        <nz-table #exposureTable [nzData]="exposure()" [nzSize]="'small'" [nzFrontPagination]="false">
+          <thead>
+            <tr>
+              <th>Simbol</th>
+              <th>Cantitate</th>
+              <th>P/L</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of exposureTable.data; track row.symbol) {
+              <tr>
+                <td>{{ row.symbol }}</td>
+                <td>{{ row.totalQuantity }}</td>
+                <td>{{ formatMoney(row.profitLoss) }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </nz-card>
+
+    <nz-card nzTitle="Timeline cumparari (30 zile)" [nzLoading]="insightsLoading()" class="insight-card">
+      @if (buyTimeline().length === 0) {
+        <p class="empty-state">Nu exista tranzactii in perioada selectata.</p>
+      } @else {
+        <nz-table #timelineTable [nzData]="buyTimeline()" [nzSize]="'small'" [nzFrontPagination]="false">
+          <thead>
+            <tr>
+              <th>Zi</th>
+              <th>Tranzactii</th>
+              <th>Investit</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of timelineTable.data; track row.day) {
+              <tr>
+                <td>{{ row.day }}</td>
+                <td>{{ row.trades }}</td>
+                <td>{{ formatMoney(row.invested) }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
     </nz-card>
   </div>
 
@@ -91,6 +194,18 @@
             <div class="panel-actions">
               <button nz-button nzType="default" nzSize="small" (click)="refreshPortfolioPrices(portfolio.id)">Actualizeaza toate cotatiile</button>
               <button nz-button nzType="default" nzSize="small" (click)="loadValuation(portfolio.id)">Vezi evaluare</button>
+              <button
+                nz-button
+                nzType="default"
+                nzDanger
+                nzSize="small"
+                [disabled]="portfolio.holdings.length === 0"
+                nz-popconfirm
+                nzPopconfirmTitle="Vinzi toate pozitiile din portofoliu?"
+                (nzOnConfirm)="sellAllHoldings(portfolio)"
+              >
+                Vinde toate pozitiile
+              </button>
             </div>
             <div
               *ngIf="showValuation[portfolio.id] && valuationData[portfolio.id]"

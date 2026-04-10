@@ -256,18 +256,16 @@ public class PortfolioService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getUserPortfolioOverview(String userId) {
-        Optional<Object[]> row = portfolioRepository.findUserPortfolioOverview(userId);
-        if (row.isEmpty()) {
-            Map<String, Object> emptyResult = new LinkedHashMap<>();
-            emptyResult.put("userId", userId);
-            emptyResult.put("portfolioCount", 0L);
-            emptyResult.put("holdingCount", 0L);
-            emptyResult.put("invested", BigDecimal.ZERO);
-            emptyResult.put("currentValue", BigDecimal.ZERO);
-            return emptyResult;
+        List<Object[]> rows = portfolioRepository.findUserPortfolioOverview(userId);
+        if (rows.isEmpty()) {
+            return emptyOverview(userId);
         }
 
-        Object[] values = row.get();
+        Object[] values = normalizeRow(rows.getFirst());
+        if (values.length < 5) {
+            return emptyOverview(userId);
+        }
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("userId", asString(values[0]));
         result.put("portfolioCount", asLong(values[1]));
@@ -481,5 +479,22 @@ public class PortfolioService {
             return date.toLocalDate().toString();
         }
         return asString(value);
+    }
+
+    private Map<String, Object> emptyOverview(String userId) {
+        Map<String, Object> emptyResult = new LinkedHashMap<>();
+        emptyResult.put("userId", userId);
+        emptyResult.put("portfolioCount", 0L);
+        emptyResult.put("holdingCount", 0L);
+        emptyResult.put("invested", BigDecimal.ZERO);
+        emptyResult.put("currentValue", BigDecimal.ZERO);
+        return emptyResult;
+    }
+
+    private Object[] normalizeRow(Object[] row) {
+        if (row.length == 1 && row[0] instanceof Object[] nested) {
+            return nested;
+        }
+        return row;
     }
 }

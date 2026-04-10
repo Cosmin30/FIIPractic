@@ -9,6 +9,50 @@
   animation: pf-hero-enter 0.72s cubic-bezier(0.2, 0.68, 0.2, 1) both;
 }
 
+.hero-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hero-actions .ant-btn {
+  min-width: 168px;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.insight-card {
+  border-radius: 18px;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.overview-grid article {
+  border: 1px solid #d9e8f5;
+  border-radius: 12px;
+  padding: 10px;
+  background: linear-gradient(145deg, #ffffff, #f7fbff);
+}
+
+.overview-grid span {
+  display: block;
+  color: #5c7188;
+  font-size: 12px;
+}
+
+.overview-grid strong {
+  color: #102f4d;
+  font-size: 17px;
+}
+
 .form-card,
 .board-card {
   border-radius: 20px;

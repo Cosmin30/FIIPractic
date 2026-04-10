@@ -9,9 +9,36 @@
   animation: stocks-hero-enter 0.72s cubic-bezier(0.2, 0.68, 0.2, 1) both;
 }
 
+.hero-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hero-actions .ant-btn {
+  min-width: 162px;
+}
+
 .stocks-page .table-card {
   border-radius: 20px;
   animation: stocks-panel-enter 0.72s cubic-bezier(0.2, 0.68, 0.2, 1) 90ms both;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.insight-card {
+  border-radius: 18px;
+  animation: stocks-panel-enter 0.72s cubic-bezier(0.2, 0.68, 0.2, 1) 100ms both;
+}
+
+.empty-state {
+  margin: 0;
+  color: #4e6078;
+  padding: 8px 0;
 }
 
 .stock-form {

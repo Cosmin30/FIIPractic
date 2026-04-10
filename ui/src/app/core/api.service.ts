@@ -2,10 +2,20 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  AdminDeletedPortfolioInsight,
+  AdminDiversifiedPortfolioInsight,
   BuyStockPayload,
   CreatePortfolioPayload,
+  PortfolioBuyTimelinePoint,
+  PortfolioExposureInsight,
+  PortfolioOverviewInsight,
+  PortfolioTopMoverInsight,
   Portfolio,
+  SellHoldingsPayload,
   Stock,
+  StockMostHeldInsight,
+  StockStaleInsight,
+  StockWatchlistCandidate,
   UserInfo
 } from './models';
 
@@ -25,6 +35,25 @@ export class ApiService {
     return this.http.get<Stock[]>('/api/stocks');
   }
 
+  getStock(id: number): Observable<Stock> {
+    return this.http.get<Stock>(`/api/stocks/${id}`);
+  }
+
+  getStaleStocks(minutes = 30): Observable<StockStaleInsight[]> {
+    const params = new HttpParams().set('minutes', minutes);
+    return this.http.get<StockStaleInsight[]>('/api/stocks/insights/stale', { params });
+  }
+
+  getMostHeldStocks(limit = 10): Observable<StockMostHeldInsight[]> {
+    const params = new HttpParams().set('limit', limit);
+    return this.http.get<StockMostHeldInsight[]>('/api/stocks/insights/most-held', { params });
+  }
+
+  getWatchlistCandidates(limit = 10): Observable<StockWatchlistCandidate[]> {
+    const params = new HttpParams().set('limit', limit);
+    return this.http.get<StockWatchlistCandidate[]>('/api/stocks/insights/watchlist', { params });
+  }
+
   createStock(symbol: string): Observable<Stock> {
     const params = new HttpParams().set('symbol', symbol);
     return this.http.post<Stock>('/api/stocks', null, { params });
@@ -35,8 +64,8 @@ export class ApiService {
     return this.http.put<Stock>(`/api/stocks/${id}`, null, { params });
   }
 
-  refreshStock(symbol: string): Observable<Stock> {
-    return this.http.post<Stock>(`/api/stocks/${symbol}/refresh`, {});
+  refreshStock(symbol: string): Observable<{ status: string; message: string }> {
+    return this.http.post<{ status: string; message: string }>(`/api/stocks/${symbol}/refresh`, {});
   }
 
   deleteStock(id: number): Observable<void> {
@@ -59,6 +88,10 @@ export class ApiService {
     return this.http.delete<Portfolio>(`/api/portfolios/${portfolioId}/holdings/${holdingId}`);
   }
 
+  sellHoldings(portfolioId: number, payload: SellHoldingsPayload): Observable<Portfolio> {
+    return this.http.delete<Portfolio>(`/api/portfolios/${portfolioId}/holdings`, { body: payload });
+  }
+
   deletePortfolio(portfolioId: number): Observable<void> {
     return this.http.delete<void>(`/api/portfolios/${portfolioId}`);
   }
@@ -78,5 +111,33 @@ export class ApiService {
 
   getPortfolioValuation(portfolioId: number): Observable<any> {
     return this.http.get(`/api/portfolios/${portfolioId}/valuation`);
+  }
+
+  getPortfolioOverview(): Observable<PortfolioOverviewInsight> {
+    return this.http.get<PortfolioOverviewInsight>('/api/portfolios/insights/overview');
+  }
+
+  getPortfolioExposure(): Observable<PortfolioExposureInsight[]> {
+    return this.http.get<PortfolioExposureInsight[]>('/api/portfolios/insights/exposure');
+  }
+
+  getPortfolioTopMovers(limit = 5): Observable<PortfolioTopMoverInsight[]> {
+    const params = new HttpParams().set('limit', limit);
+    return this.http.get<PortfolioTopMoverInsight[]>('/api/portfolios/insights/top-movers', { params });
+  }
+
+  getPortfolioBuyTimeline(days = 30): Observable<PortfolioBuyTimelinePoint[]> {
+    const params = new HttpParams().set('days', days);
+    return this.http.get<PortfolioBuyTimelinePoint[]>('/api/portfolios/insights/buy-timeline', { params });
+  }
+
+  getMostDiversifiedPortfolios(limit = 10): Observable<AdminDiversifiedPortfolioInsight[]> {
+    const params = new HttpParams().set('limit', limit);
+    return this.http.get<AdminDiversifiedPortfolioInsight[]>('/api/portfolios/insights/diversified', { params });
+  }
+
+  getRecentlyDeletedPortfolios(days = 30): Observable<AdminDeletedPortfolioInsight[]> {
+    const params = new HttpParams().set('days', days);
+    return this.http.get<AdminDeletedPortfolioInsight[]>('/api/portfolios/insights/deleted', { params });
   }
 }

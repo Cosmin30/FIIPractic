@@ -5,7 +5,10 @@
       <h1>Universul simbolurilor</h1>
       <p>Adauga simboluri, actualizeaza cotatiile si organizeaza-ti rapid tabloul de piata.</p>
     </div>
-    <button nz-button nzType="default" (click)="loadStocks()">Sincronizeaza acum</button>
+    <div class="hero-actions">
+      <button nz-button nzType="default" (click)="loadStocks()">Sincronizeaza acum</button>
+      <button nz-button nzType="default" (click)="loadInsights(true)">Actualizeaza insights</button>
+    </div>
   </section>
 
   <div class="stats-grid">
@@ -22,6 +25,83 @@
     <nz-card class="stat-card stagger-item" [nzBordered]="false">
       <span class="label">Pret mediu</span>
       <strong>{{ averagePrice() === null ? '-' : formatPrice(averagePrice()) }}</strong>
+    </nz-card>
+  </div>
+
+  <div class="insights-grid">
+    <nz-card nzTitle="Simboluri cu cotatii neactualizate" [nzLoading]="insightsLoading()" class="insight-card">
+      @if (staleStocks().length === 0) {
+        <p class="empty-state">Toate simbolurile au cotatii actualizate in acest moment.</p>
+      } @else {
+        <nz-table #staleTable [nzData]="staleStocks()" [nzSize]="'small'" [nzFrontPagination]="false">
+          <thead>
+            <tr>
+              <th>Simbol</th>
+              <th>Pret</th>
+              <th>Ultimul update</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of staleTable.data; track row.stockId) {
+              <tr>
+                <td><nz-tag nzColor="gold">{{ row.symbol }}</nz-tag></td>
+                <td>{{ formatPrice(row.currentPrice) }}</td>
+                <td>{{ row.lastPriceUpdate ? (row.lastPriceUpdate | date: 'short') : '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </nz-card>
+
+    <nz-card nzTitle="Cele mai detinute simboluri" [nzLoading]="insightsLoading()" class="insight-card">
+      @if (mostHeldStocks().length === 0) {
+        <p class="empty-state">Nu exista inca date agregate pentru detineri.</p>
+      } @else {
+        <nz-table #heldTable [nzData]="mostHeldStocks()" [nzSize]="'small'" [nzFrontPagination]="false">
+          <thead>
+            <tr>
+              <th>Simbol</th>
+              <th>Portofolii</th>
+              <th>Cantitate</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of heldTable.data; track row.symbol) {
+              <tr>
+                <td><nz-tag nzColor="cyan">{{ row.symbol }}</nz-tag></td>
+                <td>{{ row.portfolioCount }}</td>
+                <td>{{ row.totalQuantity }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </nz-card>
+
+    <nz-card nzTitle="Watchlist recomandat" [nzLoading]="insightsLoading()" class="insight-card">
+      @if (watchlistCandidates().length === 0) {
+        <p class="empty-state">Nu exista recomandari inca. Mai adauga tranzactii in portofolii.</p>
+      } @else {
+        <nz-table #watchlistTable [nzData]="watchlistCandidates()" [nzSize]="'small'" [nzFrontPagination]="false">
+          <thead>
+            <tr>
+              <th>Simbol</th>
+              <th>Cumparari</th>
+              <th>Ultima achizitie</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of watchlistTable.data; track row.symbol) {
+              <tr>
+                <td><nz-tag nzColor="blue">{{ row.symbol }}</nz-tag></td>
+                <td>{{ row.buys }}</td>
+                <td>{{ row.lastBuyAt ? (row.lastBuyAt | date: 'short') : '-' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
     </nz-card>
   </div>
 

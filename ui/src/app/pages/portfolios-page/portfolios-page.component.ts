@@ -10,9 +10,16 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule } from 'ng-zorro-antd/table';
-import { finalize, switchMap } from 'rxjs';
+import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { Holding, Portfolio } from '../../core/models';
+import {
+  Holding,
+  Portfolio,
+  PortfolioBuyTimelinePoint,
+  PortfolioExposureInsight,
+  PortfolioOverviewInsight,
+  PortfolioTopMoverInsight
+} from '../../core/models';
 
 @Component({
   selector: 'app-portfolios-page',
@@ -36,9 +43,15 @@ export class PortfoliosPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly fb = inject(FormBuilder);
   private readonly message = inject(NzMessageService);
+  private insightsFallbackNoticeShown = false;
 
   readonly portfolios = signal<Portfolio[]>([]);
   readonly loading = signal(false);
+  readonly insightsLoading = signal(false);
+  readonly overview = signal<PortfolioOverviewInsight | null>(null);
+  readonly exposure = signal<PortfolioExposureInsight[]>([]);
+  readonly topMovers = signal<PortfolioTopMoverInsight[]>([]);
+  readonly buyTimeline = signal<PortfolioBuyTimelinePoint[]>([]);
   readonly totalPortfolios = computed(() => this.portfolios().length);
   readonly totalHoldings = computed(() =>
     this.portfolios().reduce((total, portfolio) => total + portfolio.holdings.length, 0)
@@ -61,6 +74,7 @@ export class PortfoliosPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPortfolios();
+    this.loadInsights();
   }
 
   loadPortfolios(): void {
@@ -68,10 +82,72 @@ export class PortfoliosPageComponent implements OnInit {
     this.api.getMyPortfolios().subscribe({
       next: (data) => {
         this.portfolios.set(data);
+        this.overview.set(this.buildOverviewFromPortfolios(data));
         data.forEach((portfolio) => this.ensureBuyForm(portfolio.id));
       },
       error: () => this.message.error('Nu am putut incarca portofoliile.'),
       complete: () => this.loading.set(false)
+    });
+  }
+
+  loadInsights(showSuccessMessage = false): void {
+    this.insightsLoading.set(true);
+    let usedFallbackData = false;
+
+    forkJoin({
+      overview: this.api
+        .getPortfolioOverview()
+        .pipe(
+          catchError(() => {
+            usedFallbackData = true;
+            return of(this.overview() ?? this.buildOverviewFromPortfolios(this.portfolios()));
+          })
+        ),
+      exposure: this.api
+        .getPortfolioExposure()
+        .pipe(
+          catchError(() => {
+            usedFallbackData = true;
+            return of(this.buildExposureFromPortfolios(this.portfolios()));
+          })
+        ),
+      topMovers: this.api
+        .getPortfolioTopMovers(8)
+        .pipe(
+          catchError(() => {
+            usedFallbackData = true;
+            return of([] as PortfolioTopMoverInsight[]);
+          })
+        ),
+      buyTimeline: this.api
+        .getPortfolioBuyTimeline(30)
+        .pipe(
+          catchError(() => {
+            usedFallbackData = true;
+            return of(this.buildBuyTimelineFromPortfolios(this.portfolios()));
+          })
+        )
+    }).subscribe({
+      next: ({ overview, exposure, topMovers, buyTimeline }) => {
+        this.overview.set(overview);
+        this.exposure.set(exposure);
+        this.topMovers.set(topMovers);
+        this.buyTimeline.set(buyTimeline);
+
+        if (usedFallbackData && !this.insightsFallbackNoticeShown) {
+          this.message.warning('Unele insight-uri nu s-au incarcat din backend. Afisam date locale ca fallback.');
+          this.insightsFallbackNoticeShown = true;
+        }
+
+        if (!usedFallbackData) {
+          this.insightsFallbackNoticeShown = false;
+        }
+
+        if (showSuccessMessage) {
+          this.message.success('Insight-urile de portofoliu au fost actualizate.');
+        }
+      },
+      complete: () => this.insightsLoading.set(false)
     });
   }
 
@@ -87,6 +163,7 @@ export class PortfoliosPageComponent implements OnInit {
         this.message.success('Portofoliul a fost creat.');
         this.createForm.reset();
         this.loadPortfolios();
+        this.loadInsights();
       },
       error: () => this.message.error('Crearea portofoliului a esuat.')
     });
@@ -110,6 +187,7 @@ export class PortfoliosPageComponent implements OnInit {
         this.message.success(`Actiunea a fost cumparata in portofoliul #${portfolioId}.`);
         form.reset({ symbol: '', quantity: 1, purchasePrice: 1 });
         this.loadPortfolios();
+        this.loadInsights();
       },
       error: () => this.message.error('Operatiunea de cumparare a esuat.')
     });
@@ -120,6 +198,7 @@ export class PortfoliosPageComponent implements OnInit {
       next: () => {
         this.message.success(`Portofoliul #${portfolioId} a fost sters.`);
         this.loadPortfolios();
+        this.loadInsights();
       },
       error: () => this.message.error('Stergerea portofoliului a esuat.')
     });
@@ -129,6 +208,24 @@ export class PortfoliosPageComponent implements OnInit {
     this.api.refreshPortfolioPrices(portfolioId).subscribe({
       next: () => this.message.success('Cotatiile pentru acest portofoliu au fost puse in coada pentru actualizare.'),
       error: () => this.message.error('Nu am putut pune in coada cotatiile pentru portofoliu.')
+    });
+  }
+
+  sellAllHoldings(portfolio: Portfolio): void {
+    const holdingIds = portfolio.holdings.map((holding) => holding.id);
+    if (holdingIds.length === 0) {
+      this.message.info('Portofoliul nu are pozitii active.');
+      return;
+    }
+
+    this.api.sellHoldings(portfolio.id, { holdingIds }).subscribe({
+      next: () => {
+        this.message.success(`Toate pozitiile din portofoliul #${portfolio.id} au fost vandute.`);
+        this.clearValuationCache(portfolio.id);
+        this.loadPortfolios();
+        this.loadInsights();
+      },
+      error: () => this.message.error('Vanzarea bulk a pozitiilor a esuat.')
     });
   }
 
@@ -190,6 +287,7 @@ export class PortfoliosPageComponent implements OnInit {
           this.message.success(`Ai vandut complet ${holding.quantity} actiuni ${holding.symbol}.`);
           this.clearValuationCache(portfolioId);
           this.loadPortfolios();
+          this.loadInsights();
         },
         error: () => this.message.error('Vanzarea pozitiei a esuat.')
       });
@@ -219,10 +317,12 @@ export class PortfoliosPageComponent implements OnInit {
           );
           this.clearValuationCache(portfolioId);
           this.loadPortfolios();
+          this.loadInsights();
         },
         error: () => {
           this.message.error('Vanzarea partiala a esuat. Reincarca portofoliul si incearca din nou.');
           this.loadPortfolios();
+          this.loadInsights();
         }
       });
   }
@@ -272,6 +372,78 @@ export class PortfoliosPageComponent implements OnInit {
 
   private getHoldingKey(portfolioId: number, holdingId: number): string {
     return `${portfolioId}:${holdingId}`;
+  }
+
+  private buildOverviewFromPortfolios(portfolios: Portfolio[]): PortfolioOverviewInsight {
+    const holdingCount = portfolios.reduce((total, portfolio) => total + portfolio.holdings.length, 0);
+    const invested = portfolios.reduce(
+      (portfolioTotal, portfolio) =>
+        portfolioTotal
+        + portfolio.holdings.reduce(
+          (holdingTotal, holding) => holdingTotal + holding.quantity * holding.purchasePrice,
+          0
+        ),
+      0
+    );
+
+    return {
+      userId: '',
+      portfolioCount: portfolios.length,
+      holdingCount,
+      invested,
+      currentValue: invested
+    };
+  }
+
+  private buildExposureFromPortfolios(portfolios: Portfolio[]): PortfolioExposureInsight[] {
+    const bySymbol = new Map<string, { totalQuantity: number; invested: number }>();
+
+    portfolios.forEach((portfolio) => {
+      portfolio.holdings.forEach((holding) => {
+        const current = bySymbol.get(holding.symbol) ?? { totalQuantity: 0, invested: 0 };
+        current.totalQuantity += holding.quantity;
+        current.invested += holding.quantity * holding.purchasePrice;
+        bySymbol.set(holding.symbol, current);
+      });
+    });
+
+    return Array.from(bySymbol.entries())
+      .map(([symbol, values]) => ({
+        symbol,
+        totalQuantity: values.totalQuantity,
+        invested: values.invested,
+        currentValue: values.invested,
+        profitLoss: 0,
+        profitLossPercent: 0
+      }))
+      .sort((left, right) => right.invested - left.invested);
+  }
+
+  private buildBuyTimelineFromPortfolios(portfolios: Portfolio[]): PortfolioBuyTimelinePoint[] {
+    const timelineByDay = new Map<string, { trades: number; totalQuantity: number; invested: number }>();
+
+    portfolios.forEach((portfolio) => {
+      portfolio.holdings.forEach((holding) => {
+        const day = holding.purchasedAt ? holding.purchasedAt.slice(0, 10) : 'n/a';
+        const current = timelineByDay.get(day) ?? { trades: 0, totalQuantity: 0, invested: 0 };
+
+        current.trades += 1;
+        current.totalQuantity += holding.quantity;
+        current.invested += holding.quantity * holding.purchasePrice;
+
+        timelineByDay.set(day, current);
+      });
+    });
+
+    return Array.from(timelineByDay.entries())
+      .map(([day, values]) => ({
+        day,
+        trades: values.trades,
+        totalQuantity: values.totalQuantity,
+        invested: values.invested
+      }))
+      .sort((left, right) => right.day.localeCompare(left.day))
+      .slice(0, 30);
   }
 
   formatMoney(value: number): string {

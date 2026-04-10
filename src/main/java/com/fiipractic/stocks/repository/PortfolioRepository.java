@@ -35,7 +35,7 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
               and p.user_id = :userId
             group by p.user_id
             """, nativeQuery = true)
-    Optional<Object[]> findUserPortfolioOverview(@Param("userId") String userId);
+    List<Object[]> findUserPortfolioOverview(@Param("userId") String userId);
 
     @Query(value = """
             select
