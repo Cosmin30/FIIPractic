@@ -108,6 +108,28 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
+    @ExceptionHandler(MarketPriceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleMarketPriceUnavailableException(MarketPriceUnavailableException ex) {
+        logError("market_price_unavailable", "MarketPriceUnavailableException", HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), ex, false);
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+        logError("invalid_argument", "IllegalArgumentException", HttpStatus.BAD_REQUEST, ex.getMessage(), ex, false);
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();

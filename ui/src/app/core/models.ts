@@ -40,7 +40,7 @@ export interface CreatePortfolioPayload {
 export interface BuyStockPayload {
   symbol: string;
   quantity: number;
-  purchasePrice: number;
+  purchasePrice?: number;
 }
 
 export interface SellHoldingsPayload {

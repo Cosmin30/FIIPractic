@@ -108,12 +108,15 @@ public class PortfolioService {
         Portfolio portfolio = getOwnedPortfolio(jwt.getSubject(), portfolioId);
 
         Stock stock = stockService.findOrCreate(request.getSymbol());
+        BigDecimal executionPrice = request.getPurchasePrice() != null
+            ? request.getPurchasePrice()
+            : stockService.resolveExecutionPrice(stock);
 
         PortfolioHolding holding = PortfolioHolding.builder()
                 .portfolio(portfolio)
                 .stock(stock)
                 .quantity(request.getQuantity())
-                .purchasePrice(request.getPurchasePrice())
+            .purchasePrice(executionPrice)
                 .build();
 
         holdingService.saveHolding(holding);
@@ -127,6 +130,36 @@ public class PortfolioService {
         getOwnedPortfolio(userId, portfolioId);
 
         holdingService.deleteHoldingFromPortfolio(holdingId, portfolioId);
+
+        Portfolio refreshedPortfolio = getOwnedPortfolio(userId, portfolioId);
+        return toDTO(refreshedPortfolio);
+    }
+
+    @Transactional
+    public PortfolioDTO sellHoldingQuantity(Jwt jwt, Long portfolioId, Long holdingId, BigDecimal sellQuantity) {
+        String userId = jwt.getSubject();
+        getOwnedPortfolio(userId, portfolioId);
+
+        PortfolioHolding holding = portfolioHoldingRepository.findByIdAndPortfolioId(holdingId, portfolioId)
+                .orElseThrow(() -> new PortfolioNotFoundException("Holding not found in portfolio: " + holdingId));
+
+        if (sellQuantity == null || sellQuantity.signum() <= 0) {
+            throw new IllegalArgumentException("Sell quantity must be positive.");
+        }
+
+        BigDecimal currentQuantity = holding.getQuantity();
+        int compareResult = sellQuantity.compareTo(currentQuantity);
+
+        if (compareResult > 0) {
+            throw new IllegalArgumentException("Sell quantity cannot exceed available holding quantity.");
+        }
+
+        if (compareResult == 0) {
+            holdingService.deleteHoldingFromPortfolio(holdingId, portfolioId);
+        } else {
+            holding.setQuantity(currentQuantity.subtract(sellQuantity));
+            holdingService.saveHolding(holding);
+        }
 
         Portfolio refreshedPortfolio = getOwnedPortfolio(userId, portfolioId);
         return toDTO(refreshedPortfolio);
@@ -196,23 +229,22 @@ public class PortfolioService {
                     String symbol = entry.getKey();
                     List<PortfolioHolding> holdings = entry.getValue();
 
-                    int totalQuantity = holdings.stream()
-                            .mapToInt(PortfolioHolding::getQuantity)
-                            .sum();
+                BigDecimal totalQuantity = holdings.stream()
+                    .map(PortfolioHolding::getQuantity)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     BigDecimal totalCost = holdings.stream()
-                            .map(h -> h.getPurchasePrice().multiply(BigDecimal.valueOf(h.getQuantity())))
+                    .map(h -> h.getPurchasePrice().multiply(h.getQuantity()))
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                    BigDecimal quantityDecimal = BigDecimal.valueOf(totalQuantity);
-                    BigDecimal avgPrice = totalQuantity == 0
+                BigDecimal avgPrice = totalQuantity.signum() == 0
                             ? BigDecimal.ZERO
-                            : totalCost.divide(quantityDecimal, 2, RoundingMode.HALF_UP);
+                    : totalCost.divide(totalQuantity, 2, RoundingMode.HALF_UP);
 
                     BigDecimal currentPrice = holdings.isEmpty() ? null : holdings.getFirst().getStock().getCurrentPrice();
-                    BigDecimal invested = avgPrice.multiply(quantityDecimal);
+                BigDecimal invested = avgPrice.multiply(totalQuantity);
                     BigDecimal currentValue = currentPrice != null
-                            ? currentPrice.multiply(quantityDecimal)
+                    ? currentPrice.multiply(totalQuantity)
                             : invested;
 
                     BigDecimal profitLoss = currentValue.subtract(invested);
@@ -282,7 +314,7 @@ public class PortfolioService {
                 .map(row -> {
                     Map<String, Object> result = new LinkedHashMap<>();
                     result.put("symbol", asString(row[0]));
-                    result.put("totalQuantity", asLong(row[1]));
+                    result.put("totalQuantity", asBigDecimal(row[1]));
                     result.put("invested", asBigDecimal(row[2]));
                     result.put("currentValue", asBigDecimal(row[3]));
                     result.put("profitLoss", asBigDecimal(row[4]));
@@ -300,7 +332,7 @@ public class PortfolioService {
                 .map(row -> {
                     Map<String, Object> result = new LinkedHashMap<>();
                     result.put("symbol", asString(row[0]));
-                    result.put("totalQuantity", asLong(row[1]));
+                    result.put("totalQuantity", asBigDecimal(row[1]));
                     result.put("averageBuyPrice", asBigDecimal(row[2]));
                     result.put("currentPrice", asBigDecimal(row[3]));
                     result.put("movePercent", asBigDecimal(row[4]));
@@ -320,7 +352,7 @@ public class PortfolioService {
                     Map<String, Object> result = new LinkedHashMap<>();
                     result.put("day", asDateLabel(row[0]));
                     result.put("trades", asLong(row[1]));
-                    result.put("totalQuantity", asLong(row[2]));
+                    result.put("totalQuantity", asBigDecimal(row[2]));
                     result.put("invested", asBigDecimal(row[3]));
                     return result;
                 })

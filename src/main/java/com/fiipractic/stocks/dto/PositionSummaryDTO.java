@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public record PositionSummaryDTO(
         String symbol,
-        Integer totalQuantity,
+        BigDecimal totalQuantity,
         BigDecimal averagePurchasePrice,
         BigDecimal currentPrice,       // nullable if not yet refreshed
         BigDecimal invested,

@@ -25,8 +25,8 @@ public class PortfolioHolding {
     @JoinColumn(name = "stock_id", nullable = false)
     private Stock stock;
 
-    @Column(nullable = false)
-    private Integer quantity;
+    @Column(nullable = false, precision = 19, scale = 4)
+    private BigDecimal quantity;
 
     @Column(nullable = false)
     private BigDecimal purchasePrice;
@@ -38,7 +38,7 @@ public class PortfolioHolding {
     }
 
     public PortfolioHolding(Long id, Portfolio portfolio, Stock stock,
-                            Integer quantity, BigDecimal purchasePrice,
+                            BigDecimal quantity, BigDecimal purchasePrice,
                             LocalDateTime purchasedAt) {
         this.id = id;
         this.portfolio = portfolio;
@@ -61,8 +61,8 @@ public class PortfolioHolding {
     public Stock getStock() { return stock; }
     public void setStock(Stock stock) { this.stock = stock; }
 
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public BigDecimal getQuantity() { return quantity; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
 
     public BigDecimal getPurchasePrice() { return purchasePrice; }
     public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
@@ -87,14 +87,14 @@ public class PortfolioHolding {
         private Long id;
         private Portfolio portfolio;
         private Stock stock;
-        private Integer quantity;
+        private BigDecimal quantity;
         private BigDecimal purchasePrice;
         private LocalDateTime purchasedAt;
 
         public Builder id(Long id) { this.id = id; return this; }
         public Builder portfolio(Portfolio portfolio) { this.portfolio = portfolio; return this; }
         public Builder stock(Stock stock) { this.stock = stock; return this; }
-        public Builder quantity(Integer quantity) { this.quantity = quantity; return this; }
+        public Builder quantity(BigDecimal quantity) { this.quantity = quantity; return this; }
         public Builder purchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; return this; }
         public Builder purchasedAt(LocalDateTime purchasedAt) { this.purchasedAt = purchasedAt; return this; }
 

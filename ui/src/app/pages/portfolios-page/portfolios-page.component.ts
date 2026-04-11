@@ -10,7 +10,7 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule } from 'ng-zorro-antd/table';
-import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import {
   Holding,
@@ -44,6 +44,8 @@ export class PortfoliosPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly message = inject(NzMessageService);
   private insightsFallbackNoticeShown = false;
+  private readonly quantityPrecision = 4;
+  private readonly quantityEpsilon = 0.0001;
 
   readonly portfolios = signal<Portfolio[]>([]);
   readonly loading = signal(false);
@@ -178,14 +180,13 @@ export class PortfoliosPageComponent implements OnInit {
 
     const payload = {
       symbol: String(form.value['symbol']).trim().toUpperCase(),
-      quantity: Number(form.value['quantity']),
-      purchasePrice: Number(form.value['purchasePrice'])
+      quantity: Number(form.value['quantity'])
     };
 
     this.api.buyStock(portfolioId, payload).subscribe({
       next: () => {
-        this.message.success(`Actiunea a fost cumparata in portofoliul #${portfolioId}.`);
-        form.reset({ symbol: '', quantity: 1, purchasePrice: 1 });
+        this.message.success(`Actiunea a fost cumparata la cotatia curenta in portofoliul #${portfolioId}.`);
+        form.reset({ symbol: '', quantity: 1 });
         this.loadPortfolios();
         this.loadInsights();
       },
@@ -239,7 +240,7 @@ export class PortfoliosPageComponent implements OnInit {
       return;
     }
 
-    if (sellQuantity === holding.quantity) {
+    if (this.quantitiesEqual(sellQuantity, holding.quantity)) {
       this.sellHoldingCompletely(portfolioId, holding);
       return;
     }
@@ -271,8 +272,7 @@ export class PortfoliosPageComponent implements OnInit {
 
     this.buyForms[portfolioId] = this.fb.group({
       symbol: ['', [Validators.required, Validators.maxLength(10)]],
-      quantity: [1, [Validators.required, Validators.min(1)]],
-      purchasePrice: [1, [Validators.required, Validators.min(0.01)]]
+      quantity: [1, [Validators.required, Validators.min(this.quantityEpsilon)]]
     });
   }
 
@@ -284,7 +284,9 @@ export class PortfoliosPageComponent implements OnInit {
       .pipe(finalize(() => this.setHoldingSelling(portfolioId, holding.id, false)))
       .subscribe({
         next: () => {
-          this.message.success(`Ai vandut complet ${holding.quantity} actiuni ${holding.symbol}.`);
+          this.message.success(
+            `Ai vandut complet ${this.formatQuantity(holding.quantity)} actiuni ${holding.symbol}.`
+          );
           this.clearValuationCache(portfolioId);
           this.loadPortfolios();
           this.loadInsights();
@@ -294,26 +296,17 @@ export class PortfoliosPageComponent implements OnInit {
   }
 
   private sellHoldingPartially(portfolioId: number, holding: Holding, sellQuantity: number): void {
-    const remainingQuantity = holding.quantity - sellQuantity;
+    const remainingQuantity = this.roundQuantity(holding.quantity - sellQuantity);
 
     this.setHoldingSelling(portfolioId, holding.id, true);
 
     this.api
-      .sellHolding(portfolioId, holding.id)
-      .pipe(
-        switchMap(() =>
-          this.api.buyStock(portfolioId, {
-            symbol: holding.symbol,
-            quantity: remainingQuantity,
-            purchasePrice: holding.purchasePrice
-          })
-        ),
-        finalize(() => this.setHoldingSelling(portfolioId, holding.id, false))
-      )
+      .sellHoldingQuantity(portfolioId, holding.id, sellQuantity)
+      .pipe(finalize(() => this.setHoldingSelling(portfolioId, holding.id, false)))
       .subscribe({
         next: () => {
           this.message.success(
-            `Ai vandut ${sellQuantity} actiuni ${holding.symbol}. Au ramas ${remainingQuantity} actiuni.`
+            `Ai vandut ${this.formatQuantity(sellQuantity)} actiuni ${holding.symbol}. Au ramas ${this.formatQuantity(remainingQuantity)} actiuni.`
           );
           this.clearValuationCache(portfolioId);
           this.loadPortfolios();
@@ -329,23 +322,23 @@ export class PortfoliosPageComponent implements OnInit {
 
   private promptSellQuantity(maxQuantity: number): number | null {
     const input = window.prompt(
-      `Introdu cantitatea de vandut (intre 1 si ${maxQuantity}).`,
-      String(maxQuantity)
+      `Introdu cantitatea de vandut (intre 0.0001 si ${this.formatQuantity(maxQuantity)}).`,
+      this.formatQuantity(maxQuantity)
     );
 
     if (input === null) {
       return null;
     }
 
-    const normalized = input.trim();
-    if (!/^\d+$/.test(normalized)) {
-      this.message.error('Cantitatea trebuie sa fie un numar intreg.');
+    const normalized = input.trim().replace(',', '.');
+    if (!/^\d+(\.\d{1,4})?$/.test(normalized)) {
+      this.message.error('Cantitatea trebuie sa fie un numar pozitiv, cu maximum 4 zecimale.');
       return null;
     }
 
-    const quantity = Number(normalized);
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxQuantity) {
-      this.message.error(`Cantitatea trebuie sa fie intre 1 si ${maxQuantity}.`);
+    const quantity = this.roundQuantity(Number(normalized));
+    if (!Number.isFinite(quantity) || quantity < this.quantityEpsilon || quantity > maxQuantity + this.quantityEpsilon) {
+      this.message.error(`Cantitatea trebuie sa fie intre 0.0001 si ${this.formatQuantity(maxQuantity)}.`);
       return null;
     }
 
@@ -372,6 +365,15 @@ export class PortfoliosPageComponent implements OnInit {
 
   private getHoldingKey(portfolioId: number, holdingId: number): string {
     return `${portfolioId}:${holdingId}`;
+  }
+
+  private roundQuantity(value: number): number {
+    const factor = 10 ** this.quantityPrecision;
+    return Math.round(value * factor) / factor;
+  }
+
+  private quantitiesEqual(left: number, right: number): boolean {
+    return Math.abs(left - right) < this.quantityEpsilon;
   }
 
   private buildOverviewFromPortfolios(portfolios: Portfolio[]): PortfolioOverviewInsight {
@@ -448,6 +450,13 @@ export class PortfoliosPageComponent implements OnInit {
 
   formatMoney(value: number): string {
     return `$${value.toFixed(2)}`;
+  }
+
+  formatQuantity(value: number): string {
+    return new Intl.NumberFormat('ro-RO', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: this.quantityPrecision
+    }).format(value);
   }
 }
 

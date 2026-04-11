@@ -94,11 +94,17 @@
 
 .buy-form {
   display: grid;
-  grid-template-columns: 190px 130px 130px auto;
+  grid-template-columns: 220px 140px auto;
   gap: 8px;
   align-items: center;
   margin: 10px 0 12px;
   animation: pf-buy-enter 0.56s cubic-bezier(0.2, 0.68, 0.2, 1) both;
+}
+
+.buy-note {
+  margin: -4px 0 12px;
+  color: #4b627d;
+  font-size: 12px;
 }
 
 .buy-form input {

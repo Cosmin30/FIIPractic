@@ -88,6 +88,10 @@ export class ApiService {
     return this.http.delete<Portfolio>(`/api/portfolios/${portfolioId}/holdings/${holdingId}`);
   }
 
+  sellHoldingQuantity(portfolioId: number, holdingId: number, quantity: number): Observable<Portfolio> {
+    return this.http.patch<Portfolio>(`/api/portfolios/${portfolioId}/holdings/${holdingId}`, { quantity });
+  }
+
   sellHoldings(portfolioId: number, payload: SellHoldingsPayload): Observable<Portfolio> {
     return this.http.delete<Portfolio>(`/api/portfolios/${portfolioId}/holdings`, { body: payload });
   }

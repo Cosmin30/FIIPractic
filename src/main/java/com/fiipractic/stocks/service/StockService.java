@@ -1,6 +1,7 @@
 package com.fiipractic.stocks.service;
 
 import com.fiipractic.stocks.dto.StockDTO;
+import com.fiipractic.stocks.exception.MarketPriceUnavailableException;
 import com.fiipractic.stocks.exception.StockAlreadyExistsException;
 import com.fiipractic.stocks.exception.StockInUseException;
 import com.fiipractic.stocks.exception.StockNotFoundException;
@@ -23,6 +24,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class StockService {
+
+    private static final int EXECUTION_PRICE_MAX_AGE_MINUTES = 5;
 
     private final StockRepository stockRepository;
     private final PortfolioHoldingRepository portfolioHoldingRepository;
@@ -106,7 +109,7 @@ public class StockService {
                     result.put("symbol", asString(row[0]));
                     result.put("holdingCount", asLong(row[1]));
                     result.put("portfolioCount", asLong(row[2]));
-                    result.put("totalQuantity", asLong(row[3]));
+                    result.put("totalQuantity", asBigDecimal(row[3]));
                     result.put("currentPrice", asBigDecimal(row[4]));
                     return result;
                 })
@@ -122,7 +125,7 @@ public class StockService {
                     Map<String, Object> result = new LinkedHashMap<>();
                     result.put("symbol", asString(row[0]));
                     result.put("buys", asLong(row[1]));
-                    result.put("totalQuantity", asLong(row[2]));
+                    result.put("totalQuantity", asBigDecimal(row[2]));
                     result.put("lastBuyAt", asDateTime(row[3]));
                     result.put("currentPrice", asBigDecimal(row[4]));
                     return result;
@@ -181,8 +184,40 @@ public class StockService {
                 .orElseGet(() -> stockRepository.save(Stock.builder().symbol(normalized).build()));
     }
 
+    @Transactional
+    public BigDecimal resolveExecutionPrice(Stock stock) {
+        if (stock.getCurrentPrice() != null && !isPriceStale(stock.getLastPriceUpdate(), EXECUTION_PRICE_MAX_AGE_MINUTES)) {
+            return stock.getCurrentPrice();
+        }
+
+        try {
+            BigDecimal latestPrice = alphaVantageClient.fetchLatestPrice(stock.getSymbol());
+            stock.setCurrentPrice(latestPrice);
+            stock.setLastPriceUpdate(LocalDateTime.now());
+            stockRepository.save(stock);
+            return latestPrice;
+        } catch (RuntimeException ex) {
+            if (stock.getCurrentPrice() != null) {
+                return stock.getCurrentPrice();
+            }
+
+            throw new MarketPriceUnavailableException(
+                    "Nu am putut obtine cotatia curenta pentru simbolul " + stock.getSymbol() + ". Incearca din nou.",
+                    ex
+            );
+        }
+    }
+
     private String normalize(String symbol) {
         return symbol == null ? "" : symbol.trim().toUpperCase();
+    }
+
+    private boolean isPriceStale(LocalDateTime lastPriceUpdate, int maxAgeMinutes) {
+        if (lastPriceUpdate == null) {
+            return true;
+        }
+
+        return lastPriceUpdate.isBefore(LocalDateTime.now().minusMinutes(maxAgeMinutes));
     }
 
     private StockDTO toDTO(Stock s) {

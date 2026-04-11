@@ -61,6 +61,16 @@ public class PortfolioController {
         return ResponseEntity.ok(portfolioService.sellHolding(jwt, portfolioId, holdingId));
     }
 
+    @PatchMapping("/{portfolioId}/holdings/{holdingId}")
+    @PreAuthorize("hasAnyRole('USER', 'PREMIUM', 'ADMIN')")
+    public ResponseEntity<PortfolioDTO> sellHoldingQuantity(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long portfolioId,
+            @PathVariable Long holdingId,
+            @Valid @RequestBody SellHoldingQuantityRequest request) {
+        return ResponseEntity.ok(portfolioService.sellHoldingQuantity(jwt, portfolioId, holdingId, request.getQuantity()));
+    }
+
     @DeleteMapping("/{portfolioId}/holdings")
     @PreAuthorize("hasAnyRole('USER', 'PREMIUM', 'ADMIN')")
     public ResponseEntity<PortfolioDTO> sellHoldings(

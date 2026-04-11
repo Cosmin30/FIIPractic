@@ -33,7 +33,7 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
                 s.symbol as symbol,
                 count(h.id)::bigint as holdingCount,
                 count(distinct p.id)::bigint as portfolioCount,
-                sum(h.quantity)::bigint as totalQuantity,
+                coalesce(sum(h.quantity), 0) as totalQuantity,
                 coalesce(avg(s.current_price), 0) as currentPrice
             from stocks s
             join portfolio_holdings h on h.stock_id = s.id
@@ -48,7 +48,7 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
             select
                 s.symbol as symbol,
                 count(h.id)::bigint as buys,
-                sum(h.quantity)::bigint as totalQuantity,
+                coalesce(sum(h.quantity), 0) as totalQuantity,
                 max(h.purchased_at) as lastBuyAt,
                 coalesce(max(s.current_price), 0) as currentPrice
             from stocks s

@@ -42,7 +42,7 @@ public interface PortfolioHoldingRepository extends JpaRepository<PortfolioHoldi
 	@Query(value = """
 			select
 				s.symbol as symbol,
-				sum(h.quantity)::bigint as totalQuantity,
+				coalesce(sum(h.quantity), 0) as totalQuantity,
 				coalesce(sum(h.quantity * h.purchase_price), 0) as invested,
 				coalesce(sum(h.quantity * coalesce(s.current_price, h.purchase_price)), 0) as currentValue,
 				coalesce(sum(h.quantity * coalesce(s.current_price, h.purchase_price)), 0) -
@@ -66,7 +66,7 @@ public interface PortfolioHoldingRepository extends JpaRepository<PortfolioHoldi
 	@Query(value = """
 			select
 				s.symbol as symbol,
-				sum(h.quantity)::bigint as totalQuantity,
+				coalesce(sum(h.quantity), 0) as totalQuantity,
 				coalesce(avg(h.purchase_price), 0) as averageBuyPrice,
 				coalesce(max(s.current_price), 0) as currentPrice,
 				case
@@ -94,7 +94,7 @@ public interface PortfolioHoldingRepository extends JpaRepository<PortfolioHoldi
 			select
 				date_trunc('day', h.purchased_at)::date as day,
 				count(h.id)::bigint as trades,
-				sum(h.quantity)::bigint as totalQuantity,
+				coalesce(sum(h.quantity), 0) as totalQuantity,
 				coalesce(sum(h.quantity * h.purchase_price), 0) as invested
 			from portfolio_holdings h
 			join portfolios p on p.id = h.portfolio_id

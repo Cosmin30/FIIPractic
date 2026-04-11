@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 public record HoldingDTO(
         Long id,
         String symbol,
-        Integer quantity,
+        BigDecimal quantity,
         BigDecimal purchasePrice,
         LocalDateTime purchasedAt
 ) {}
