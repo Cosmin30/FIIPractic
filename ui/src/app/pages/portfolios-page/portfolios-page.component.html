@@ -1,24 +1,24 @@
 ﻿<div class="portfolios-page market-page page-enter">
   <section class="hero-strip glass-panel">
     <div>
-      <p class="eyebrow">Tablou portofolii</p>
-      <h1>Atelierul tau de capital</h1>
-      <p>Construieste strategii, urmareste pozitiile si dezvolta fiecare portofoliu pas cu pas.</p>
+      <p class="eyebrow">Portofoliile tale</p>
+      <h1>Organizeaza-ti investitiile simplu si clar</h1>
+      <p>Adaugi usor actiuni, urmaresti ce ai cumparat si vezi rapid cum evolueaza fiecare portofoliu.</p>
     </div>
     <div class="hero-actions">
-      <button nz-button nzType="default" (click)="loadPortfolios()">Actualizeaza tabloul</button>
-      <button nz-button nzType="default" (click)="loadInsights(true)">Actualizeaza insights</button>
+      <button nz-button nzType="default" (click)="loadPortfolios()">Actualizeaza lista</button>
+      <button nz-button nzType="default" (click)="loadInsights(true)">Reincarca analizele</button>
     </div>
   </section>
 
   <div class="stats-grid">
     <nz-card class="stat-card stagger-item" [nzBordered]="false">
-      <span class="label">Portofolii</span>
+      <span class="label">Portofolii active</span>
       <strong>{{ totalPortfolios() }}</strong>
     </nz-card>
 
     <nz-card class="stat-card stagger-item" [nzBordered]="false">
-      <span class="label">Total pozitii</span>
+      <span class="label">Pozitii deschise</span>
       <strong>{{ totalHoldings() }}</strong>
     </nz-card>
 
@@ -29,11 +29,11 @@
   </div>
 
   <div class="insights-grid">
-    <nz-card nzTitle="Overview portofolii" [nzLoading]="insightsLoading()" class="insight-card">
+    <nz-card nzTitle="Privire de ansamblu" [nzLoading]="insightsLoading()" class="insight-card">
       @if (overview()) {
         <div class="overview-grid">
           <article>
-            <span>Portofolii</span>
+            <span>Portofolii active</span>
             <strong>{{ overview()!.portfolioCount }}</strong>
           </article>
           <article>
@@ -52,16 +52,16 @@
       }
     </nz-card>
 
-    <nz-card nzTitle="Top movers" [nzLoading]="insightsLoading()" class="insight-card">
+    <nz-card nzTitle="Actiuni cu variatie mare" [nzLoading]="insightsLoading()" class="insight-card">
       @if (topMovers().length === 0) {
-        <p class="empty-state">Nu exista inca suficiente date pentru movers.</p>
+        <p class="empty-state">Nu exista inca suficiente date pentru variatii.</p>
       } @else {
         <nz-table #moversTable [nzData]="topMovers()" [nzSize]="'small'" [nzFrontPagination]="false">
           <thead>
             <tr>
-              <th>Simbol</th>
+              <th>Actiune</th>
               <th>Cantitate</th>
-              <th>Move %</th>
+              <th>Variatie %</th>
             </tr>
           </thead>
           <tbody>
@@ -77,14 +77,14 @@
       }
     </nz-card>
 
-    <nz-card nzTitle="Expunere pe simboluri" [nzLoading]="insightsLoading()" class="insight-card">
+    <nz-card nzTitle="Expunere pe actiuni" [nzLoading]="insightsLoading()" class="insight-card">
       @if (exposure().length === 0) {
-        <p class="empty-state">Nu exista expunere agregata momentan.</p>
+        <p class="empty-state">Momentan nu exista date agregate pentru expunere.</p>
       } @else {
         <nz-table #exposureTable [nzData]="exposure()" [nzSize]="'small'" [nzFrontPagination]="false">
           <thead>
             <tr>
-              <th>Simbol</th>
+              <th>Actiune</th>
               <th>Cantitate</th>
               <th>P/L</th>
             </tr>
@@ -102,7 +102,7 @@
       }
     </nz-card>
 
-    <nz-card nzTitle="Timeline cumparari (30 zile)" [nzLoading]="insightsLoading()" class="insight-card">
+    <nz-card nzTitle="Evolutia cumpararilor (30 de zile)" [nzLoading]="insightsLoading()" class="insight-card">
       @if (buyTimeline().length === 0) {
         <p class="empty-state">Nu exista tranzactii in perioada selectata.</p>
       } @else {
@@ -128,10 +128,10 @@
     </nz-card>
   </div>
 
-  <nz-card nzTitle="Creeaza portofoliu" class="form-card">
+  <nz-card nzTitle="Portofoliu nou" class="form-card">
     <form nz-form [formGroup]="createForm" (ngSubmit)="createPortfolio()" class="portfolio-form">
       <nz-form-item>
-        <nz-form-control nzErrorTip="Numele este obligatoriu">
+        <nz-form-control nzErrorTip="Completeaza numele portofoliului">
           <input nz-input formControlName="name" placeholder="Nume portofoliu" />
         </nz-form-control>
       </nz-form-item>
@@ -143,7 +143,7 @@
       </nz-form-item>
 
       <button nz-button nzType="primary">Creeaza portofoliu</button>
-      <button nz-button type="button" (click)="loadPortfolios()">Reincarca</button>
+      <button nz-button type="button" (click)="loadPortfolios()">Reincarca lista</button>
     </form>
   </nz-card>
 
@@ -154,7 +154,7 @@
    
   >
     @if (portfolios().length === 0) {
-      <p class="empty-state">Nu exista portofolii inca. Creeaza unul pentru a incepe monitorizarea.</p>
+      <p class="empty-state">Nu ai inca portofolii. Creeaza unul ca sa incepi.</p>
     } @else {
       <nz-collapse class="portfolio-collapse">
         @for (portfolio of portfolios(); track portfolio.id; let i = $index) {
@@ -171,7 +171,7 @@
                 nzDanger
                 nzSize="small"
                 nz-popconfirm
-                nzPopconfirmTitle="Stergi acest portofoliu?"
+                nzPopconfirmTitle="Vrei sa stergi acest portofoliu?"
                 (nzOnConfirm)="deletePortfolio(portfolio.id)"
               >
                 Sterge
@@ -181,19 +181,19 @@
             <p class="meta">
               <strong>Descriere:</strong> {{ portfolio.description || '-' }}
               <span class="separator">|</span>
-              <strong>Creat la:</strong> {{ portfolio.createdAt | date: 'short' }}
+              <strong>Data crearii:</strong> {{ portfolio.createdAt | date: 'short' }}
             </p>
 
             <form [formGroup]="buyForms[portfolio.id]" class="buy-form" (ngSubmit)="buyStock(portfolio.id)">
-              <input nz-input formControlName="symbol" placeholder="Simbol" />
+              <input nz-input formControlName="symbol" placeholder="Actiune (ex: AAPL)" />
               <nz-input-number formControlName="quantity" [nzMin]="0.0001" [nzStep]="0.25"></nz-input-number>
               <button nz-button nzType="primary" nzSize="small">Cumpara actiune</button>
             </form>
-            <p class="buy-note">Pretul de cumparare se preia automat din cotatia curenta.</p>
+            <p class="buy-note">Pretul de cumparare este preluat automat la momentul tranzactiei.</p>
 
             <div class="panel-actions">
-              <button nz-button nzType="default" nzSize="small" (click)="refreshPortfolioPrices(portfolio.id)">Actualizeaza toate cotatiile</button>
-              <button nz-button nzType="default" nzSize="small" (click)="loadValuation(portfolio.id)">Vezi evaluare</button>
+              <button nz-button nzType="default" nzSize="small" (click)="refreshPortfolioPrices(portfolio.id)">Actualizeaza toate preturile</button>
+              <button nz-button nzType="default" nzSize="small" (click)="loadValuation(portfolio.id)">Afiseaza evaluarea</button>
               <button
                 nz-button
                 nzType="default"
@@ -201,7 +201,7 @@
                 nzSize="small"
                 [disabled]="portfolio.holdings.length === 0"
                 nz-popconfirm
-                nzPopconfirmTitle="Vinzi toate pozitiile din portofoliu?"
+                nzPopconfirmTitle="Vrei sa vinzi toate pozitiile din portofoliu?"
                 (nzOnConfirm)="sellAllHoldings(portfolio)"
               >
                 Vinde toate pozitiile
@@ -214,18 +214,18 @@
               <h4>Evaluare portofoliu</h4>
               <p><strong>Total investit:</strong> {{ valuationData[portfolio.id].totalInvested | number:'1.2-2' }}</p>
               <p><strong>Valoare curenta:</strong> {{ valuationData[portfolio.id].totalCurrentValue | number:'1.2-2' }}</p>
-              <p><strong>P/L:</strong> {{ valuationData[portfolio.id].totalProfitLoss | number:'1.2-2' }} ({{ valuationData[portfolio.id].totalProfitLossPercent | number:'1.2-2' }}%)</p>
+              <p><strong>Profit/Pierdere:</strong> {{ valuationData[portfolio.id].totalProfitLoss | number:'1.2-2' }} ({{ valuationData[portfolio.id].totalProfitLossPercent | number:'1.2-2' }}%)</p>
               <nz-table #valuationTable [nzData]="valuationData[portfolio.id].positions" [nzPageSize]="5" [nzSize]="'small'">
                 <thead>
                   <tr>
-                    <th>Simbol</th>
+                    <th>Actiune</th>
                     <th>Cantitate</th>
                     <th>Pret mediu</th>
                     <th>Pret curent</th>
                     <th>Investit</th>
                     <th>Valoare curenta</th>
-                    <th>P/L</th>
-                    <th>P/L %</th>
+                    <th>Profit/Pierdere</th>
+                    <th>Profit/Pierdere %</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -246,10 +246,10 @@
             <nz-table #holdingsTable [nzData]="portfolio.holdings" [nzPageSize]="5" [nzSize]="'small'">
               <thead>
                 <tr>
-                  <th>Simbol</th>
+                  <th>Actiune</th>
                   <th>Cantitate</th>
-                  <th>Pret achizitie</th>
-                  <th>Achizitionat la</th>
+                  <th>Pret de cumparare</th>
+                  <th>Data cumpararii</th>
                   <th>Actiuni</th>
                 </tr>
               </thead>
@@ -272,10 +272,10 @@
                         [nzLoading]="isSellingHolding(portfolio.id, holding.id)"
                         [disabled]="isSellingHolding(portfolio.id, holding.id)"
                         nz-popconfirm
-                        nzPopconfirmTitle="Pornesti vanzarea (completa sau partiala)?"
+                        nzPopconfirmTitle="Vrei sa vinzi aceasta pozitie (complet sau partial)?"
                         (nzOnConfirm)="sellHoldingWithQuantity(portfolio.id, holding)"
                       >
-                        Vinde / Retrage
+                        Vinde
                       </button>
                     </td>
                   </tr>

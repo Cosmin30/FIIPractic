@@ -50,7 +50,7 @@ export class LoginPageComponent {
 
     this.authService.login(username, password).subscribe({
       next: () => {
-        this.message.success('Autentificare reusita.');
+        this.message.success('Te-ai conectat cu succes.');
         this.router.navigate(['/stocks']);
       },
       error: (error: unknown) => {
@@ -61,22 +61,22 @@ export class LoginPageComponent {
 
   private resolveAuthError(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) {
-      return 'Autentificarea a esuat. Incearca din nou.';
+      return 'Conectarea a esuat. Incearca din nou.';
     }
 
     if (error.status === 0) {
-      return 'Serverul de autentificare nu raspunde. Verifica daca Keycloak ruleaza pe portul 8082.';
+      return 'Serviciul de autentificare nu raspunde. Verifica daca Keycloak ruleaza pe portul 8082.';
     }
 
     if (error.status === 404) {
-      return 'Endpointul de autentificare nu a fost gasit. Verifica proxy-ul frontend.';
+      return 'Nu am gasit endpoint-ul de autentificare. Verifica configuratia de proxy din frontend.';
     }
 
     if (error.status === 401 || error.status === 400) {
-      return 'Utilizator sau parola invalida.';
+      return 'Numele de utilizator sau parola sunt incorecte.';
     }
 
-    return `Autentificarea a esuat cu status ${error.status}.`;
+    return `Conectarea a esuat (cod ${error.status}).`;
   }
 }
 

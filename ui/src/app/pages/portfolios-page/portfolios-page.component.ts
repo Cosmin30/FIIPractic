@@ -87,7 +87,7 @@ export class PortfoliosPageComponent implements OnInit {
         this.overview.set(this.buildOverviewFromPortfolios(data));
         data.forEach((portfolio) => this.ensureBuyForm(portfolio.id));
       },
-      error: () => this.message.error('Nu am putut incarca portofoliile.'),
+      error: () => this.message.error('Nu am putut incarca lista de portofolii.'),
       complete: () => this.loading.set(false)
     });
   }
@@ -137,7 +137,7 @@ export class PortfoliosPageComponent implements OnInit {
         this.buyTimeline.set(buyTimeline);
 
         if (usedFallbackData && !this.insightsFallbackNoticeShown) {
-          this.message.warning('Unele insight-uri nu s-au incarcat din backend. Afisam date locale ca fallback.');
+          this.message.warning('Unele analize nu s-au incarcat din backend. Afisam temporar date locale.');
           this.insightsFallbackNoticeShown = true;
         }
 
@@ -146,7 +146,7 @@ export class PortfoliosPageComponent implements OnInit {
         }
 
         if (showSuccessMessage) {
-          this.message.success('Insight-urile de portofoliu au fost actualizate.');
+          this.message.success('Analizele portofoliilor au fost actualizate.');
         }
       },
       complete: () => this.insightsLoading.set(false)
@@ -162,12 +162,12 @@ export class PortfoliosPageComponent implements OnInit {
     const payload = this.createForm.getRawValue();
     this.api.createPortfolio(payload).subscribe({
       next: () => {
-        this.message.success('Portofoliul a fost creat.');
+        this.message.success('Portofoliul a fost creat cu succes.');
         this.createForm.reset();
         this.loadPortfolios();
         this.loadInsights();
       },
-      error: () => this.message.error('Crearea portofoliului a esuat.')
+      error: () => this.message.error('Nu am putut crea portofoliul.')
     });
   }
 
@@ -185,48 +185,48 @@ export class PortfoliosPageComponent implements OnInit {
 
     this.api.buyStock(portfolioId, payload).subscribe({
       next: () => {
-        this.message.success(`Actiunea a fost cumparata la cotatia curenta in portofoliul #${portfolioId}.`);
+        this.message.success(`Actiunea a fost cumparata in portofoliul #${portfolioId}.`);
         form.reset({ symbol: '', quantity: 1 });
         this.loadPortfolios();
         this.loadInsights();
       },
-      error: () => this.message.error('Operatiunea de cumparare a esuat.')
+      error: () => this.message.error('Nu am putut finaliza cumpararea.')
     });
   }
 
   deletePortfolio(portfolioId: number): void {
     this.api.deletePortfolio(portfolioId).subscribe({
       next: () => {
-        this.message.success(`Portofoliul #${portfolioId} a fost sters.`);
+        this.message.success(`Portofoliul #${portfolioId} a fost sters cu succes.`);
         this.loadPortfolios();
         this.loadInsights();
       },
-      error: () => this.message.error('Stergerea portofoliului a esuat.')
+      error: () => this.message.error('Nu am putut sterge portofoliul.')
     });
   }
 
   refreshPortfolioPrices(portfolioId: number): void {
     this.api.refreshPortfolioPrices(portfolioId).subscribe({
-      next: () => this.message.success('Cotatiile pentru acest portofoliu au fost puse in coada pentru actualizare.'),
-      error: () => this.message.error('Nu am putut pune in coada cotatiile pentru portofoliu.')
+      next: () => this.message.success('Actualizarea preturilor pentru acest portofoliu a fost pornita.'),
+      error: () => this.message.error('Nu am putut porni actualizarea preturilor pentru portofoliu.')
     });
   }
 
   sellAllHoldings(portfolio: Portfolio): void {
     const holdingIds = portfolio.holdings.map((holding) => holding.id);
     if (holdingIds.length === 0) {
-      this.message.info('Portofoliul nu are pozitii active.');
+      this.message.info('Portofoliul nu are pozitii deschise.');
       return;
     }
 
     this.api.sellHoldings(portfolio.id, { holdingIds }).subscribe({
       next: () => {
-        this.message.success(`Toate pozitiile din portofoliul #${portfolio.id} au fost vandute.`);
+        this.message.success(`Toate pozitiile din portofoliul #${portfolio.id} au fost vandute cu succes.`);
         this.clearValuationCache(portfolio.id);
         this.loadPortfolios();
         this.loadInsights();
       },
-      error: () => this.message.error('Vanzarea bulk a pozitiilor a esuat.')
+      error: () => this.message.error('Nu am putut vinde toate pozitiile.')
     });
   }
 
@@ -261,7 +261,7 @@ export class PortfoliosPageComponent implements OnInit {
         this.valuationData[portfolioId] = data;
         this.showValuation[portfolioId] = true;
       },
-      error: () => this.message.error('Nu am putut incarca evaluarea portofoliului.')
+      error: () => this.message.error('Nu am putut incarca evaluarea acestui portofoliu.')
     });
   }
 
@@ -285,13 +285,13 @@ export class PortfoliosPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.message.success(
-            `Ai vandut complet ${this.formatQuantity(holding.quantity)} actiuni ${holding.symbol}.`
+            `Ai vandut toate cele ${this.formatQuantity(holding.quantity)} actiuni ${holding.symbol}.`
           );
           this.clearValuationCache(portfolioId);
           this.loadPortfolios();
           this.loadInsights();
         },
-        error: () => this.message.error('Vanzarea pozitiei a esuat.')
+        error: () => this.message.error('Nu am putut vinde aceasta pozitie.')
       });
   }
 
@@ -306,14 +306,14 @@ export class PortfoliosPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.message.success(
-            `Ai vandut ${this.formatQuantity(sellQuantity)} actiuni ${holding.symbol}. Au ramas ${this.formatQuantity(remainingQuantity)} actiuni.`
+            `Ai vandut ${this.formatQuantity(sellQuantity)} actiuni ${holding.symbol}. Au ramas ${this.formatQuantity(remainingQuantity)} actiuni in portofoliu.`
           );
           this.clearValuationCache(portfolioId);
           this.loadPortfolios();
           this.loadInsights();
         },
         error: () => {
-          this.message.error('Vanzarea partiala a esuat. Reincarca portofoliul si incearca din nou.');
+          this.message.error('Nu am putut finaliza vanzarea partiala. Reincarca portofoliul si incearca din nou.');
           this.loadPortfolios();
           this.loadInsights();
         }
@@ -322,7 +322,7 @@ export class PortfoliosPageComponent implements OnInit {
 
   private promptSellQuantity(maxQuantity: number): number | null {
     const input = window.prompt(
-      `Introdu cantitatea de vandut (intre 0.0001 si ${this.formatQuantity(maxQuantity)}).`,
+      `Introdu cantitatea pe care vrei sa o vinzi (intre 0.0001 si ${this.formatQuantity(maxQuantity)}).`,
       this.formatQuantity(maxQuantity)
     );
 
@@ -332,7 +332,7 @@ export class PortfoliosPageComponent implements OnInit {
 
     const normalized = input.trim().replace(',', '.');
     if (!/^\d+(\.\d{1,4})?$/.test(normalized)) {
-      this.message.error('Cantitatea trebuie sa fie un numar pozitiv, cu maximum 4 zecimale.');
+      this.message.error('Cantitatea trebuie sa fie un numar pozitiv, cu cel mult 4 zecimale.');
       return null;
     }
 

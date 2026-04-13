@@ -11,7 +11,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { catchError, forkJoin, of } from 'rxjs';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { ApiService } from '../../core/api.service';
-import { AdminDeletedPortfolioInsight, AdminDiversifiedPortfolioInsight, Portfolio } from '../../core/models';
+import { AdminDeletedPortfolioInsight, AdminDiversifiedPortfolioInsight, Portfolio, UserInfo } from '../../core/models';
 
 import { FormsModule } from '@angular/forms';
 
@@ -38,11 +38,39 @@ export class AdminPortfoliosPageComponent implements OnInit {
   private readonly message = inject(NzMessageService);
   private readonly fb = inject(FormBuilder);
 
+  readonly currentUser = signal<UserInfo | null>(null);
   readonly portfolios = signal<Portfolio[]>([]);
   readonly loading = signal(false);
   readonly insightsLoading = signal(false);
   readonly diversifiedInsights = signal<AdminDiversifiedPortfolioInsight[]>([]);
   readonly deletedInsights = signal<AdminDeletedPortfolioInsight[]>([]);
+  readonly userAliasById = computed(() => {
+    const currentUserId = this.currentUser()?.userId;
+    const ids = new Set<string>();
+
+    this.diversifiedInsights().forEach((row) => {
+      if (row.userId && row.userId !== currentUserId) {
+        ids.add(row.userId);
+      }
+    });
+
+    this.deletedInsights().forEach((row) => {
+      if (row.userId && row.userId !== currentUserId) {
+        ids.add(row.userId);
+      }
+
+      if (row.deletedBy && row.deletedBy !== currentUserId) {
+        ids.add(row.deletedBy);
+      }
+    });
+
+    const aliases = new Map<string, string>();
+    Array.from(ids)
+      .sort()
+      .forEach((id, index) => aliases.set(id, `Utilizator ${index + 1}`));
+
+    return aliases;
+  });
   readonly totalPortfolios = computed(() => this.portfolios().length);
   readonly deletedCount = computed(() => this.portfolios().filter((portfolio) => portfolio.deleted).length);
   readonly activeCount = computed(() => this.totalPortfolios() - this.deletedCount());
@@ -58,8 +86,22 @@ export class AdminPortfoliosPageComponent implements OnInit {
   valuationData: Record<number, any> = {};
 
   ngOnInit(): void {
+    this.loadCurrentUser();
     this.load();
     this.loadInsights();
+  }
+
+  userDisplay(userId: string | null | undefined): string {
+    if (!userId) {
+      return '-';
+    }
+
+    const currentUser = this.currentUser();
+    if (currentUser?.userId === userId) {
+      return currentUser.username?.trim() || 'Tu';
+    }
+
+    return this.userAliasById().get(userId) ?? 'Utilizator';
   }
 
   load(): void {
@@ -136,6 +178,13 @@ export class AdminPortfoliosPageComponent implements OnInit {
         this.showValuation[portfolioId] = true;
       },
       error: () => this.message.error('Nu am putut incarca evaluarea portofoliului.')
+    });
+  }
+
+  private loadCurrentUser(): void {
+    this.api.whoAmI().subscribe({
+      next: (user) => this.currentUser.set(user),
+      error: () => this.currentUser.set(null)
     });
   }
 }

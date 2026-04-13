@@ -70,7 +70,7 @@ export class StocksPageComponent implements OnInit {
     this.loading.set(true);
     this.api.getStocks().subscribe({
       next: (data) => this.stocks.set(data),
-      error: () => this.message.error('Nu am putut incarca simbolurile.'),
+      error: () => this.message.error('Nu am putut incarca lista de actiuni.'),
       complete: () => this.loading.set(false)
     });
   }
@@ -89,7 +89,7 @@ export class StocksPageComponent implements OnInit {
         this.watchlistCandidates.set(watchlist);
 
         if (showSuccessMessage) {
-          this.message.success('Insight-urile de piata au fost actualizate.');
+          this.message.success('Analizele pietei au fost actualizate.');
         }
       },
       complete: () => this.insightsLoading.set(false)
@@ -105,50 +105,50 @@ export class StocksPageComponent implements OnInit {
     const symbol = this.createForm.getRawValue().symbol.trim().toUpperCase();
     this.api.createStock(symbol).subscribe({
       next: () => {
-        this.message.success(`Simbolul ${symbol} a fost creat.`);
+        this.message.success(`Actiunea ${symbol} a fost adaugata.`);
         this.createForm.reset();
         this.loadStocks();
         this.loadInsights();
       },
-      error: () => this.message.error('Crearea simbolului a esuat.')
+      error: () => this.message.error('Nu am putut adauga actiunea.')
     });
   }
 
   refreshPrice(symbol: string): void {
     this.api.refreshStock(symbol).subscribe({
       next: () => {
-        this.message.success(`Cotatia pentru ${symbol} a fost actualizata.`);
+        this.message.success(`Pretul pentru ${symbol} a fost actualizat.`);
         this.loadStocks();
         this.loadInsights();
       },
-      error: () => this.message.error(`Nu am putut actualiza ${symbol}.`)
+      error: () => this.message.error(`Nu am putut actualiza pretul pentru ${symbol}.`)
     });
   }
 
   refreshAllPrices(): void {
     this.api.refreshAllStocks().subscribe({
       next: () => {
-        this.message.success('Toate cotatiile au fost puse in coada pentru actualizare.');
+        this.message.success('Actualizarea preturilor a fost pornita.');
         this.loadStocks();
         this.loadInsights();
       },
-      error: () => this.message.error('Nu am putut pune in coada toate cotatiile.')
+      error: () => this.message.error('Nu am putut porni actualizarea tuturor preturilor.')
     });
   }
 
   updateStock(stock: Stock): void {
-    const updated = window.prompt('Noul simbol', stock.symbol);
+    const updated = window.prompt('Cod nou pentru actiune', stock.symbol);
     if (!updated) {
       return;
     }
 
     this.api.updateStock(stock.id, updated.trim().toUpperCase()).subscribe({
       next: () => {
-        this.message.success(`Simbolul #${stock.id} a fost actualizat.`);
+        this.message.success(`Actiunea #${stock.id} a fost actualizata.`);
         this.loadStocks();
         this.loadInsights();
       },
-      error: () => this.message.error('Actualizarea simbolului a esuat.')
+      error: () => this.message.error('Nu am putut actualiza actiunea.')
     });
   }
 
@@ -160,7 +160,7 @@ export class StocksPageComponent implements OnInit {
     this.setDeleting(id, true);
     this.api.deleteStock(id).subscribe({
       next: () => {
-        this.message.success(`Simbolul #${id} a fost sters.`);
+        this.message.success(`Actiunea #${id} a fost stearsa.`);
         this.loadStocks();
         this.loadInsights();
       },
@@ -192,17 +192,17 @@ export class StocksPageComponent implements OnInit {
       const serverMessage = this.extractErrorMessage(error);
 
       if (error.status === 409) {
-        return serverMessage ?? 'Simbolul este folosit in portofolii si nu poate fi sters. Sterge intai pozitiile care il folosesc.';
+        return serverMessage ?? 'Actiunea este folosita in portofolii si nu poate fi stearsa. Sterge mai intai pozitiile care o folosesc.';
       }
 
       if (error.status === 404) {
-        return 'Simbolul nu mai exista.';
+        return 'Actiunea nu mai exista.';
       }
 
-      return serverMessage ?? 'Stergerea simbolului a esuat.';
+      return serverMessage ?? 'Nu am putut sterge actiunea.';
     }
 
-    return 'Stergerea simbolului a esuat.';
+    return 'Nu am putut sterge actiunea.';
   }
 
   private extractErrorMessage(error: HttpErrorResponse): string | null {

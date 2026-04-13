@@ -46,7 +46,7 @@
             @for (row of diversifiedTable.data; track row.portfolioId) {
               <tr>
                 <td>#{{ row.portfolioId }} - {{ row.portfolioName }}</td>
-                <td>{{ row.userId }}</td>
+                <td>{{ userDisplay(row.userId) }}</td>
                 <td>{{ row.uniqueSymbols }}</td>
                 <td>{{ row.marketValue | number:'1.2-2' }}</td>
               </tr>
@@ -73,8 +73,8 @@
             @for (row of deletedTable.data; track row.portfolioId) {
               <tr>
                 <td>#{{ row.portfolioId }} - {{ row.portfolioName }}</td>
-                <td>{{ row.userId }}</td>
-                <td>{{ row.deletedBy }}</td>
+                <td>{{ userDisplay(row.userId) }}</td>
+                <td>{{ userDisplay(row.deletedBy) }}</td>
                 <td>{{ row.deletedAt ? (row.deletedAt | date: 'short') : '-' }}</td>
               </tr>
             }

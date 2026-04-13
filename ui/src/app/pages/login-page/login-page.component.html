@@ -4,25 +4,26 @@
       class="intro-card glass-panel"
      
     >
-      <p class="eyebrow">Platforma de stocuri</p>
-      <h1>Construieste portofolii cu un flux clar si rapid.</h1>
+      <p class="eyebrow">Platforma bursiera</p>
+      <h1>Gestioneaza portofolii simplu, rapid si fara batai de cap.</h1>
       <p>
-        Ai intr-un singur loc simbolurile pietei, gestionarea portofoliilor pe roluri si vizibilitate
-        administrativa. Date reale, control simplu si decizii mai rapide.
+        Intr-un singur loc vezi ce se intampla in bursa, iti organizezi usor portofoliile si ai
+        acces rapid la functiile importante. Datele se actualizeaza constant, ca sa iei decizii
+        informate.
       </p>
 
       <div class="feature-list">
         <article class="feature-item stagger-item" style="--i: 0">
-          <h4>Monitorizare live</h4>
-          <p>Urmareste si actualizeaza instant simbolurile direct din dashboard.</p>
+          <h4>Piata, pe scurt</h4>
+          <p>Urmaresti rapid evolutia actiunilor care te intereseaza.</p>
         </article>
         <article class="feature-item stagger-item" style="--i: 1">
-          <h4>Portofolii dinamice</h4>
-          <p>Creeaza portofolii si cumpara pozitii respectand regulile de acces pe rol.</p>
+          <h4>Portofoliul tau, simplu</h4>
+          <p>Iti creezi portofolii si adaugi pozitii in doar cativa pasi.</p>
         </article>
         <article class="feature-item stagger-item" style="--i: 2">
-          <h4>Control administrativ</h4>
-          <p>Verifica portofolii active sau sterse intr-o vizualizare unica.</p>
+          <h4>Totul la indemana</h4>
+          <p>Gasesti intr-un singur loc functiile importante pentru contul tau.</p>
         </article>
       </div>
     </section>
@@ -33,8 +34,8 @@
      
     >
       <div class="login-header">
-        <h2>Autentificare</h2>
-        <p>Conecteaza-te cu datele contului tau pentru a accesa panoul financiar.</p>
+        <h2>Conectare</h2>
+        <p>Conecteaza-te cu datele contului pentru a intra in platforma.</p>
       </div>
 
       @if (errorMessage) {
@@ -45,21 +46,21 @@
 
       <form nz-form [formGroup]="loginForm" (ngSubmit)="submit()" class="login-form">
         <nz-form-item>
-          <nz-form-control nzErrorTip="Numele de utilizator este obligatoriu">
-            <label class="input-label">Utilizator</label>
-            <input nz-input formControlName="username" placeholder="nume.utilizator" />
+          <nz-form-control nzErrorTip="Completeaza numele de utilizator">
+            <label class="input-label">Nume utilizator</label>
+            <input nz-input formControlName="username" placeholder="ex: ion.popescu" />
           </nz-form-control>
         </nz-form-item>
 
         <nz-form-item>
-          <nz-form-control nzErrorTip="Parola este obligatorie">
+          <nz-form-control nzErrorTip="Completeaza parola">
             <label class="input-label">Parola</label>
             <input nz-input type="password" formControlName="password" placeholder="********" />
           </nz-form-control>
         </nz-form-item>
 
         <button nz-button nzType="primary" [nzLoading]="authService.loading()" class="full-width">
-          Intra in platforma
+          Intra in cont
         </button>
       </form>
     </nz-card>
