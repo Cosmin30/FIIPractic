@@ -1,6 +1,6 @@
 ﻿import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -31,7 +31,7 @@ import { Stock, StockMostHeldInsight, StockStaleInsight, StockWatchlistCandidate
   templateUrl: './stocks-page.component.html',
   styleUrl: './stocks-page.component.css'
 })
-export class StocksPageComponent implements OnInit {
+export class StocksPageComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly fb = inject(FormBuilder);
   private readonly message = inject(NzMessageService);
@@ -39,6 +39,7 @@ export class StocksPageComponent implements OnInit {
   readonly stocks = signal<Stock[]>([]);
   readonly loading = signal(false);
   readonly insightsLoading = signal(false);
+  readonly realtimeRefreshing = signal(false);
   readonly deletingStockIds = signal<Set<number>>(new Set());
   readonly staleStocks = signal<StockStaleInsight[]>([]);
   readonly mostHeldStocks = signal<StockMostHeldInsight[]>([]);
@@ -60,19 +61,44 @@ export class StocksPageComponent implements OnInit {
   readonly createForm = this.fb.nonNullable.group({
     symbol: ['', [Validators.required, Validators.maxLength(10)]]
   });
+  private realtimeRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private realtimeRefreshRequestedAt: number | null = null;
+  private lastRefreshAllTriggeredAt: number | null = null;
+  private realtimeRefreshTickInFlight = false;
+  private realtimeRefreshRuns = 0;
+  private readonly realtimeRefreshMaxRuns = 20;
+  private readonly realtimeRefreshIntervalMs = 2000;
+  private readonly realtimeRefreshSkewMs = 3000;
+  private readonly quoteFreshnessWindowMs = 300000;
+  private readonly refreshAllCooldownMs = 120000;
 
   ngOnInit(): void {
     this.loadStocks();
     this.loadInsights();
   }
 
-  loadStocks(): void {
+  ngOnDestroy(): void {
+    this.stopRealtimeRefresh(false, true);
+  }
+
+  loadStocks(showSuccessMessage = false): void {
     this.loading.set(true);
     this.api.getStocks().subscribe({
-      next: (data) => this.stocks.set(data),
+      next: (data) => {
+        this.stocks.set(data);
+
+        if (showSuccessMessage) {
+          this.message.success('Lista de actiuni a fost actualizata.');
+        }
+      },
       error: () => this.message.error('Nu am putut incarca lista de actiuni.'),
       complete: () => this.loading.set(false)
     });
+  }
+
+  refreshPageData(): void {
+    this.loadStocks(true);
+    this.loadInsights(true);
   }
 
   loadInsights(showSuccessMessage = false): void {
@@ -126,13 +152,39 @@ export class StocksPageComponent implements OnInit {
   }
 
   refreshAllPrices(): void {
+    if (this.realtimeRefreshing()) {
+      this.message.info('Actualizarea live este deja in curs.');
+      return;
+    }
+
+    const now = Date.now();
+    if (this.lastRefreshAllTriggeredAt !== null) {
+      const elapsed = now - this.lastRefreshAllTriggeredAt;
+      if (elapsed < this.refreshAllCooldownMs) {
+        const secondsLeft = Math.ceil((this.refreshAllCooldownMs - elapsed) / 1000);
+        this.message.warning(`Pentru a evita limitarea API, poti porni din nou actualizarea globala in ${secondsLeft}s.`);
+        return;
+      }
+    }
+
+    if (!this.hasQuotesToRefresh()) {
+      this.message.info('Nu exista cotatii care necesita actualizare acum.');
+      return;
+    }
+
+    this.realtimeRefreshing.set(true);
+    this.lastRefreshAllTriggeredAt = now;
     this.api.refreshAllStocks().subscribe({
       next: () => {
-        this.message.success('Actualizarea preturilor a fost pornita.');
-        this.loadStocks();
-        this.loadInsights();
+        this.realtimeRefreshRequestedAt = Date.now();
+        this.message.success('Actualizarea preturilor a pornit');
+        this.startRealtimeRefresh();
       },
-      error: () => this.message.error('Nu am putut porni actualizarea tuturor preturilor.')
+      error: () => {
+        this.realtimeRefreshing.set(false);
+        this.lastRefreshAllTriggeredAt = null;
+        this.message.error('Nu am putut porni actualizarea tuturor preturilor.');
+      }
     });
   }
 
@@ -230,6 +282,121 @@ export class StocksPageComponent implements OnInit {
     }
 
     return `$${price.toFixed(2)}`;
+  }
+
+  private startRealtimeRefresh(): void {
+    this.stopRealtimeRefresh(false, true);
+    this.realtimeRefreshing.set(true);
+    this.realtimeRefreshTickInFlight = false;
+    this.realtimeRefreshRuns = 0;
+
+    this.pollRealtimeRefresh();
+    this.realtimeRefreshTimer = setInterval(() => this.pollRealtimeRefresh(), this.realtimeRefreshIntervalMs);
+  }
+
+  private pollRealtimeRefresh(): void {
+    if (this.realtimeRefreshTickInFlight || !this.realtimeRefreshing()) {
+      return;
+    }
+
+    this.realtimeRefreshTickInFlight = true;
+    this.realtimeRefreshRuns += 1;
+
+    this.api.getStocks().subscribe({
+      next: (data) => {
+        this.stocks.set(data);
+
+        if (this.realtimeRefreshRuns % 4 === 0) {
+          this.loadInsights();
+        }
+
+        if (this.areAllQuotesUpdated(data)) {
+          this.loadInsights();
+          this.stopRealtimeRefresh(true);
+          return;
+        }
+
+        if (this.realtimeRefreshRuns >= this.realtimeRefreshMaxRuns) {
+          this.stopRealtimeRefresh(false);
+        }
+      },
+      error: () => {
+        this.message.error('Nu am putut verifica starea actualizarii live.');
+        this.stopRealtimeRefresh(false);
+      },
+      complete: () => {
+        this.realtimeRefreshTickInFlight = false;
+      }
+    });
+  }
+
+  private areAllQuotesUpdated(stocks: Stock[]): boolean {
+    if (!stocks.length) {
+      return true;
+    }
+
+    if (this.realtimeRefreshRequestedAt === null) {
+      return false;
+    }
+
+    return stocks.every((stock) => {
+      if (stock.currentPrice === null || !stock.lastPriceUpdate) {
+        return false;
+      }
+
+      const updatedAt = Date.parse(stock.lastPriceUpdate);
+      if (Number.isNaN(updatedAt)) {
+        return false;
+      }
+
+      return updatedAt >= this.realtimeRefreshRequestedAt! - this.realtimeRefreshSkewMs;
+    });
+  }
+
+  private hasQuotesToRefresh(): boolean {
+    const stocks = this.stocks();
+    if (!stocks.length) {
+      return false;
+    }
+
+    if (this.staleStocks().length > 0) {
+      return true;
+    }
+
+    const now = Date.now();
+    return stocks.some((stock) => {
+      if (stock.currentPrice === null || !stock.lastPriceUpdate) {
+        return true;
+      }
+
+      const updatedAt = Date.parse(stock.lastPriceUpdate);
+      if (Number.isNaN(updatedAt)) {
+        return true;
+      }
+
+      return now - updatedAt > this.quoteFreshnessWindowMs;
+    });
+  }
+
+  private stopRealtimeRefresh(completed: boolean, silent = false): void {
+    if (this.realtimeRefreshTimer) {
+      clearInterval(this.realtimeRefreshTimer);
+      this.realtimeRefreshTimer = null;
+    }
+
+    const wasRefreshing = this.realtimeRefreshing();
+    this.realtimeRefreshing.set(false);
+    this.realtimeRefreshRequestedAt = null;
+    this.realtimeRefreshTickInFlight = false;
+    this.realtimeRefreshRuns = 0;
+
+    if (!silent && wasRefreshing) {
+      if (completed) {
+        this.message.success('Toate cotatiile au fost actualizate.');
+      } else {
+        this.message.info('Actualizarea live s-a oprit. Unele cotatii pot fi inca in curs de actualizare.');
+      }
+    }
   }
 }
 
