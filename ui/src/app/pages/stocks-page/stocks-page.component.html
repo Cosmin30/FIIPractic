@@ -8,6 +8,7 @@
     <div class="hero-actions">
       <button nz-button nzType="default" [nzLoading]="realtimeRefreshing()" (click)="refreshAllPrices()">Actualizeaza preturi live</button>
       <button nz-button nzType="default" (click)="loadInsights(true)">Reincarca analizele</button>
+      <app-page-help title="Ajutor - Piata" [intro]="helpIntro" [steps]="helpSteps" [tips]="helpTips"></app-page-help>
     </div>
   </section>
 

@@ -11,6 +11,7 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { catchError, forkJoin, of } from 'rxjs';
+import { PageHelpComponent } from '../../components/page-help/page-help.component';
 import { ApiService } from '../../core/api.service';
 import { Stock, StockMostHeldInsight, StockStaleInsight, StockWatchlistCandidate } from '../../core/models';
 
@@ -26,7 +27,8 @@ import { Stock, StockMostHeldInsight, StockStaleInsight, StockWatchlistCandidate
     NzInputModule,
     NzTableModule,
     NzTagModule,
-    NzPopconfirmModule
+    NzPopconfirmModule,
+    PageHelpComponent
   ],
   templateUrl: './stocks-page.component.html',
   styleUrl: './stocks-page.component.css'
@@ -57,6 +59,16 @@ export class StocksPageComponent implements OnInit, OnDestroy {
 
     return values.reduce((sum, price) => sum + price, 0) / values.length;
   });
+  readonly helpIntro = 'Pagina Piata te ajuta sa administrezi simbolurile si cotatiile in timp real.';
+  readonly helpSteps = [
+    'Adauga simboluri noi in cardul Administrare actiuni.',
+    'Ruleaza Actualizeaza pret pentru un simbol sau Actualizeaza preturi live pentru toate.',
+    'Verifica panourile de analize pentru simboluri stale, cele mai detinute si recomandari.'
+  ];
+  readonly helpTips = [
+    'Daca stergerea unui simbol esueaza, acesta este folosit in portofolii.',
+    'Dupa operatii multiple, apasa Reincarca analizele pentru date actualizate.'
+  ];
 
   readonly createForm = this.fb.nonNullable.group({
     symbol: ['', [Validators.required, Validators.maxLength(10)]]

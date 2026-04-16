@@ -1,0 +1,48 @@
+<button
+  nz-button
+  nzType="default"
+  class="page-help-btn"
+  [class.is-wide]="buttonLabel().length > 1"
+  (click)="openHelp()"
+  [attr.aria-label]="'Ajutor pentru ' + title()"
+>
+  {{ buttonLabel() }}
+</button>
+
+<nz-drawer
+  [nzTitle]="title()"
+  [nzVisible]="helpVisible()"
+  [nzWidth]="420"
+  [nzMaskClosable]="true"
+  (nzOnClose)="closeHelp()"
+>
+  <ng-container *nzDrawerContent>
+    <section class="help-panel">
+      <p class="help-intro">{{ intro() }}</p>
+
+      <h4>Cum folosesti aceasta pagina</h4>
+      @if (steps().length > 0) {
+        <ol>
+          @for (step of steps(); track step) {
+            <li>{{ step }}</li>
+          }
+        </ol>
+      } @else {
+        <p class="help-empty">Nu exista pasi definiti pentru aceasta pagina.</p>
+      }
+
+      @if (tips().length > 0) {
+        <h4>Tips utile</h4>
+        <ul>
+          @for (tip of tips(); track tip) {
+            <li>{{ tip }}</li>
+          }
+        </ul>
+      }
+
+      <div class="help-actions">
+        <button nz-button nzType="primary" (click)="closeHelp()">Am inteles</button>
+      </div>
+    </section>
+  </ng-container>
+</nz-drawer>

@@ -8,6 +8,12 @@
     <div class="hero-actions">
       <button nz-button nzType="default" (click)="loadPortfolios()">Actualizeaza lista</button>
       <button nz-button nzType="default" (click)="loadInsights(true)">Reincarca analizele</button>
+      <app-page-help
+        title="Ajutor - Portofolii"
+        [intro]="helpIntro"
+        [steps]="helpSteps"
+        [tips]="helpTips"
+      ></app-page-help>
     </div>
   </section>
 

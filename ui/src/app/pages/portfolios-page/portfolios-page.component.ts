@@ -11,6 +11,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { PageHelpComponent } from '../../components/page-help/page-help.component';
 import { ApiService } from '../../core/api.service';
 import {
   Holding,
@@ -34,7 +35,8 @@ import {
     NzInputModule,
     NzInputNumberModule,
     NzTableModule,
-    NzPopconfirmModule
+    NzPopconfirmModule,
+    PageHelpComponent
   ],
   templateUrl: './portfolios-page.component.html',
   styleUrl: './portfolios-page.component.css'
@@ -65,6 +67,16 @@ export class PortfoliosPageComponent implements OnInit {
       0
     )
   );
+  readonly helpIntro = 'Pagina Portofolii este centrul unde creezi portofolii si gestionezi tranzactiile.';
+  readonly helpSteps = [
+    'Creeaza un portofoliu nou din formularul dedicat.',
+    'Cumpara actiuni in panoul fiecarui portofoliu folosind simbolul si cantitatea.',
+    'Foloseste Vinde, Vinde toate pozitiile si Afiseaza evaluarea pentru control complet.'
+  ];
+  readonly helpTips = [
+    'Cantitatile permit valori fractionare pentru vanzari partiale.',
+    'Actualizeaza preturile portofoliului inainte de a verifica evaluarea.'
+  ];
 
   readonly createForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(60)]],

@@ -10,6 +10,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { catchError, forkJoin, of } from 'rxjs';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { PageHelpComponent } from '../../components/page-help/page-help.component';
 import { ApiService } from '../../core/api.service';
 import { AdminDeletedPortfolioInsight, AdminDiversifiedPortfolioInsight, Portfolio, UserInfo } from '../../core/models';
 
@@ -28,7 +29,8 @@ import { FormsModule } from '@angular/forms';
     NzTagModule,
     NzButtonModule,
     NzFormModule,
-    NzInputModule
+    NzInputModule,
+    PageHelpComponent
   ],
   templateUrl: './admin-portfolios-page.component.html',
   styleUrl: './admin-portfolios-page.component.css'
@@ -74,6 +76,16 @@ export class AdminPortfoliosPageComponent implements OnInit {
   readonly totalPortfolios = computed(() => this.portfolios().length);
   readonly deletedCount = computed(() => this.portfolios().filter((portfolio) => portfolio.deleted).length);
   readonly activeCount = computed(() => this.totalPortfolios() - this.deletedCount());
+  readonly helpIntro = 'Pagina Admin este pentru supervizarea tuturor portofoliilor din platforma.';
+  readonly helpSteps = [
+    'Actualizeaza datele din butoanele de sus: portofolii si insights.',
+    'Activeaza Include portofolii sterse pentru audit complet.',
+    'Din tabel poti sterge, reimprospata cotatii si analiza evaluarea fiecarui portofoliu.'
+  ];
+  readonly helpTips = [
+    'In tabele, utilizatorii sunt afisati cu alias pentru protectia identitatii.',
+    'Este recomandat sa verifici evaluarea inainte de operatii administrative majore.'
+  ];
 
   includeDeleted = false;
 

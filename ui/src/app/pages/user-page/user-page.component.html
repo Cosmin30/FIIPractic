@@ -5,7 +5,10 @@
       <h1>Profilul tau, intr-un tablou financiar clar</h1>
       <p>Vezi rolurile active, ritmul investitiilor si sanatatea contului fara sa iesi din dashboard.</p>
     </div>
-    <button nz-button nzType="default" (click)="reload()">Reimprospateaza profilul</button>
+    <div class="hero-actions">
+      <button nz-button nzType="default" (click)="reload()">Reimprospateaza profilul</button>
+      <app-page-help title="Ajutor - Utilizator" [intro]="helpIntro" [steps]="helpSteps" [tips]="helpTips"></app-page-help>
+    </div>
   </section>
 
   <div class="profile-grid">

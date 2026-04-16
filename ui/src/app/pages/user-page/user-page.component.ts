@@ -8,6 +8,7 @@ import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { catchError, forkJoin, of } from 'rxjs';
+import { PageHelpComponent } from '../../components/page-help/page-help.component';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { Portfolio, Stock } from '../../core/models';
@@ -22,7 +23,8 @@ import { Portfolio, Stock } from '../../core/models';
     NzTagModule,
     NzAvatarModule,
     NzSkeletonModule,
-    NzProgressModule
+    NzProgressModule,
+    PageHelpComponent
   ],
   templateUrl: './user-page.component.html',
   styleUrl: './user-page.component.css'
@@ -41,6 +43,16 @@ export class UserPageComponent implements OnInit {
   readonly loading = signal(true);
   readonly portfolios = signal<Portfolio[]>([]);
   readonly stocks = signal<Stock[]>([]);
+  readonly helpIntro = 'Pagina Utilizator iti arata statusul contului si un rezumat financiar personal.';
+  readonly helpSteps = [
+    'Verifica datele de profil, emailul si rolurile active.',
+    'Consulta scorul profil si indicatorii din Pulsul contului.',
+    'Apasa Reimprospateaza profilul dupa schimbari recente in tranzactii.'
+  ];
+  readonly helpTips = [
+    'Scorul profil creste cand ai date complete, portofolii si pozitii active.',
+    'Valorile din aceasta pagina se sincronizeaza din stocuri si portofolii.'
+  ];
 
   readonly initials = computed(() => {
     const username = this.user()?.username?.trim();
